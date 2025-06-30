@@ -1,5 +1,5 @@
 {
-  "name": "jest-to-vitest-codemod",
+  "name": "@kamaalio/jest-to-vitest-codemod",
   "version": "0.0.2",
   "type": "module",
   "author": "Kamaal Farah",
