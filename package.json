@@ -1,6 +1,6 @@
 {
   "name": "jest-to-vitest-codemod",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "type": "module",
   "author": "Kamaal Farah",
   "repository": "kamaal111/jest-to-vitest-codemod",
@@ -25,7 +25,6 @@
   "scripts": {
     "build": "rslib build",
     "build:clean": "rm -rf dist tsconfig.tsbuildinfo && pnpm build",
-    "deploy": "pnpm install && pnpm build:clean && zsh scripts/publish.zsh",
     "dev": "rslib build --watch",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
