@@ -1,0 +1,1 @@
+pnpm exec tsx scripts/publish-package-json.ts "${VERSION:-null}"

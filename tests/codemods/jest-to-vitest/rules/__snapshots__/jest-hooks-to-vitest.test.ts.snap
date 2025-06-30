@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`beforeAll > removes return 1`] = `"beforeAll(() => { setActivePinia(createTestingPinia()) })"`;
+
+exports[`beforeEach > removes return 1`] = `"beforeEach(() => { setActivePinia(createTestingPinia()) })"`;

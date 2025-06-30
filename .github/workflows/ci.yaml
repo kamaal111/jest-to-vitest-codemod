@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.ref }}-ci
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git - Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - name: Use Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: https://registry.npmjs.org
+          cache: 'pnpm'
+
+      - name: Run quality checks
+        run: pnpm quality
+
+  test:
+    name: Test
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git - Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.4
+
+      - name: Use Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: https://registry.npmjs.org
+          cache: 'pnpm'
+
+      - name: Run tests
+        run: pnpm test:cov

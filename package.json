@@ -1,0 +1,70 @@
+{
+  "name": "jest-to-vitest-codemod",
+  "version": "1.0.0",
+  "type": "module",
+  "author": "Kamaal Farah",
+  "repository": "kamaal111/jest-to-vitest-codemod",
+  "bugs": "https://github.com/kamaal111/jest-to-vitest-codemod/issues",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "packageManager": "pnpm@10.12.4",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "rslib build",
+    "build:clean": "rm -rf dist tsconfig.tsbuildinfo && pnpm build",
+    "deploy": "pnpm install && pnpm build:clean && zsh scripts/publish.zsh",
+    "dev": "rslib build --watch",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "lint": "eslint",
+    "prepare": "husky",
+    "test": "vitest run",
+    "test:cov": "pnpm install && vitest run --coverage",
+    "test:u": "vitest run --update",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
+    "quality": "pnpm install && pnpm lint && pnpm format:check && pnpm type-check"
+  },
+  "dependencies": {
+    "@ast-grep/napi": "^0.38.6",
+    "@kamaalio/codemod-kit": "^0.0.32",
+    "@kamaalio/kamaal": "^0.7.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@kamaalio/prettier-config": "^0.1.2",
+    "@rslib/core": "^0.10.4",
+    "@types/node": "^22.15.33",
+    "@vitest/coverage-v8": "3.2.4",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.5.3",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vitest": "^3.2.4"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "prettier": "@kamaalio/prettier-config"
+}

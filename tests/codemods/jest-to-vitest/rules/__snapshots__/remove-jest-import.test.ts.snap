@@ -1,0 +1,5 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`removeJestImport > removes jest import 1`] = `""`;
+
+exports[`removeJestImport > removes jest import with default import specifier 1`] = `""`;

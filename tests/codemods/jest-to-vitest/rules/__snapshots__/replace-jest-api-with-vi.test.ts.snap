@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`jest.clearAllMocks -> vi.clearAllMocks > replaces jest clearAllMocks with vi 1`] = `"vi.clearAllMocks()"`;
+
+exports[`jest.mock -> vi.mock > replaces jest mock with vi 1`] = `"vi.mock('./some-path', () => ({default: 'hello'})"`;
+
+exports[`jest.mock -> vi.mock > replaces jest mock with vi without module override 1`] = `
+"vi.mock('./some-path')
+    "
+`;
+
+exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual 1`] = `"(await vi.importActual('lodash/cloneDeep'))"`;
+
+exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual in mock 1`] = `
+"vi.mock('something', async () => ({default: ({
+      ...(await vi.importActual('something')),
+      mocked: jest.fn()
+    })})
+    "
+`;
+
+exports[`jest.resetAllMocks -> vi.resetAllMocks > replaces jest resetAllMocks with vi 1`] = `"vi.resetAllMocks()"`;
+
+exports[`jest.restoreAllMocks -> vi.restoreAllMocks > replaces jest restoreAllMocks with vi 1`] = `"vi.restoreAllMocks()"`;
+
+exports[`jest.setTimeout -> vi.setTimeout > replaces jest setTimeout with vi 1`] = `"vi.setTimeout({ testTimeout: 50_000 })"`;
+
+exports[`jest.spyOn -> vi.spyOn > replaces jest spyOn with vi 1`] = `"vi.spyOn(modules, 'path', 'key')"`;
+
+exports[`jest.spyOn -> vi.spyOn > replaces jest spyOn with vi with a single param 1`] = `"vi.spyOn(modules)"`;
+
+exports[`jest.useFakeTimers -> vi.useFakeTimers > replaces jest useFakeTimers with vi 1`] = `"vi.useFakeTimers()"`;
+
+exports[`jest.useRealTimers -> vi.useRealTimers > replaces jest useRealTimers with vi 1`] = `"vi.useRealTimers()"`;
