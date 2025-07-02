@@ -16,6 +16,17 @@ describe('jestMockTypeToVitest', () => {
     expect(updatedSource).toContain(`let fn: Mock<(name: string) => number>`);
   });
 
+  it('removes vi from vi.Mock', async () => {
+    const source = `let fn: vi.Mock<(name: string) => number>`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain(`let fn: Mock<(name: string) => number>`);
+  });
+
   it('removes nothing', async () => {
     const source = `let fn: Mock<(name: string) => number>`;
 

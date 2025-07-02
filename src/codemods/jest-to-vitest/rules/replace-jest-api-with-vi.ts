@@ -4,39 +4,13 @@ import {
   type Modifications,
   traverseUp,
 } from '@kamaalio/codemod-kit';
-import { arrays, asserts } from '@kamaalio/kamaal';
+import { asserts } from '@kamaalio/kamaal';
 
 const PATH_MATCH_KEY = 'PATH';
 const MODULE_MATCH_KEY = 'MODULE';
 
-const SAME_NAME_JEST_TO_VITEST_API_MAPPING: Record<string, string> = Object.fromEntries(
-  arrays
-    .uniques([
-      'restoreAllMocks',
-      'resetAllMocks',
-      'clearAllMocks',
-      'useFakeTimers',
-      'useRealTimers',
-      'runAllTicks',
-      'runAllTimers',
-      'advanceTimersByTime',
-      'advanceTimersByTimeAsync',
-      'runOnlyPendingTimers',
-      'runOnlyPendingTimersAsync',
-      'advanceTimersToNextTimer',
-      'advanceTimersToNextTimerAsync',
-      'advanceTimersToNextFrame',
-      'clearAllTimers',
-      'getTimerCount',
-      'setSystemTime',
-      'getRealSystemTime',
-    ])
-    .map(name => [`jest.${name}`, `vi.${name}`]),
-);
 const SIMPLE_JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = Object.entries({
-  ...SAME_NAME_JEST_TO_VITEST_API_MAPPING,
   'jest.requireActual($ARG)': '(await vi.importActual($ARG))',
-  'jest.spyOn($$$ARGS)': 'vi.spyOn($$$ARGS)',
   'jest.setTimeout($ARGS)': 'vi.setTimeout({ testTimeout: $ARGS })',
 }).map(([jestApi, vitestApi]) => ({ rule: { pattern: jestApi }, transformer: vitestApi }));
 const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
@@ -65,6 +39,15 @@ const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
       if (arrowFunction == null) return null;
 
       return arrowFunction.replace(`async ${arrowFunction.text()}`);
+    },
+  },
+  {
+    rule: { pattern: 'jest.$REST' },
+    transformer: node => {
+      const rest = node.getMatch('REST');
+      asserts.invariant(rest != null, 'rest should be present at this point');
+
+      return node.replace(`vi.${rest.text()}`);
     },
   },
 ];

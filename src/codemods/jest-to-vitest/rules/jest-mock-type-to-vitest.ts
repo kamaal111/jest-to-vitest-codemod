@@ -5,7 +5,9 @@ import {
 } from '@kamaalio/codemod-kit';
 
 const EDIT_CONFIG: FindAndReplaceConfig = {
-  rule: { kind: 'nested_type_identifier', regex: 'jest.Mock' },
+  rule: {
+    any: ['jest', 'vi'].map(prefix => ({ kind: 'nested_type_identifier', regex: `${prefix}.Mock` })),
+  },
   transformer: 'Mock',
 };
 

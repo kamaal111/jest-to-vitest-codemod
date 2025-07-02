@@ -31,8 +31,10 @@ describe('jest.requireActual -> vi.importActual', () => {
     const updatedSource = modifications.ast.root().text();
 
     expect(updatedSource).not.toContain(`requireActual`);
+    expect(updatedSource).not.toContain('jest');
     expect(updatedSource).toContain(`await vi.importActual('something')`);
     expect(updatedSource).toContain(`vi.mock('something', async () => ({ default:`);
+    expect(updatedSource).toContain('mocked: vi.fn()');
   });
 });
 
