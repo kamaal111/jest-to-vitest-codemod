@@ -11,7 +11,7 @@ exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual wit
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual in mock 1`] = `
 "vi.mock('something', async () => ({ default: ({
       ...(await vi.importActual('something')),
-      mocked: jest.fn()
+      mocked: vi.fn()
     }) }))"
 `;
 

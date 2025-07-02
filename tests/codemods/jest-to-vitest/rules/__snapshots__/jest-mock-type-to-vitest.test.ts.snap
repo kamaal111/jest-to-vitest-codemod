@@ -1,3 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`jestMockTypeToVitest > removes jest from jest.Mock 1`] = `"let fn: Mock<(name: string) => number>"`;
+
+exports[`jestMockTypeToVitest > removes vi from vi.Mock 1`] = `"let fn: Mock<(name: string) => number>"`;
