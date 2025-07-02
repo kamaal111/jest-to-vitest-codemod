@@ -103,4 +103,43 @@ describe('addVitestImports', () => {
       return addVitestImports(makeJestToVitestInitialModification(ast));
     });
   });
+
+  it('imports Mock type as only import', async () => {
+    const source = `
+let fn: jest.Mock<(name: string) => number> 
+    `;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return addVitestImports(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain(`import type { Mock } from 'vitest'`);
+  });
+
+  it('imports Mock type', async () => {
+    const source = `
+let fn: jest.Mock<(name: string) => number> 
+
+describe('addVitestImports', () => {
+  it('collects vitest functions and imports them', async () => {
+    const source = '';
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return addVitestImports(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain('');
+  });
+});
+    `;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return addVitestImports(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain(`import { describe, expect, it, type Mock } from 'vitest'`);
+  });
 });

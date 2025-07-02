@@ -10,15 +10,16 @@ export async function invalidRuleSignal(
   transform: (ast: SgRoot<TypesMap>) => Promise<Modifications>,
   historyLength?: number,
 ): Promise<Modifications> {
-  const ast = await parseAsync(lang, source);
+  const trimmedSource = source.trim();
+  const ast = await parseAsync(lang, trimmedSource);
 
   const modifications = await transform(ast);
-  const updatedSource = modifications.ast.root().text();
+  const updatedSource = modifications.ast.root().text().trim();
 
   expect(modifications.report.changesApplied, updatedSource).greaterThan(0);
   expect(modifications.history.length, updatedSource).greaterThan(1);
   expect(modifications.history.length, updatedSource).toBe(historyLength ?? modifications.report.changesApplied + 1);
-  expect(source).not.toEqual(updatedSource);
+  expect(trimmedSource).not.toEqual(updatedSource);
   expect(updatedSource).toMatchSnapshot();
 
   return modifications;
@@ -29,14 +30,15 @@ export async function validRuleSignal(
   lang: NapiLang,
   transform: (ast: SgRoot<TypesMap>) => Promise<Modifications>,
 ): Promise<Modifications> {
-  const ast = await parseAsync(lang, source);
+  const trimmedSource = source.trim();
+  const ast = await parseAsync(lang, trimmedSource);
 
   const modifications = await transform(ast);
   const updatedSource = modifications.ast.root().text();
 
   expect(modifications.report.changesApplied, updatedSource).toEqual(0);
   expect(modifications.history.length, updatedSource).toEqual(1);
-  expect(source.trim()).toEqual(updatedSource.trim());
+  expect(trimmedSource).toEqual(updatedSource.trim());
 
   return modifications;
 }

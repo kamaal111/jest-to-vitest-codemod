@@ -14,8 +14,7 @@ describe('addVitestImports', () => {
 
     expect(updatedSource).toContain('');
   });
-});
-    "
+});"
 `;
 
 exports[`addVitestImports > adds vitest import at the top of the program 1`] = `
@@ -33,8 +32,7 @@ describe('addVitestImports', () => {
 
     expect(updatedSource).toContain('');
   });
-});
-    "
+});"
 `;
 
 exports[`addVitestImports > collects vitest functions and imports them 1`] = `
@@ -51,6 +49,30 @@ describe('addVitestImports', () => {
 
     expect(updatedSource).toContain('');
   });
-});
-    "
+});"
+`;
+
+exports[`addVitestImports > imports Mock type 1`] = `
+"import { describe, expect, it, type Mock } from 'vitest';
+
+let fn: jest.Mock<(name: string) => number> 
+
+describe('addVitestImports', () => {
+  it('collects vitest functions and imports them', async () => {
+    const source = '';
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return addVitestImports(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain('');
+  });
+});"
+`;
+
+exports[`addVitestImports > imports Mock type as only import 1`] = `
+"import type { Mock } from 'vitest';
+
+let fn: jest.Mock<(name: string) => number>"
 `;
