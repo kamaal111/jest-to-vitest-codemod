@@ -1,4 +1,5 @@
-import type { Edit } from '@ast-grep/napi';
+import type { Edit, Rule } from '@ast-grep/napi';
+import type { TypesMap } from '@ast-grep/napi/types/staticTypes.js';
 import { commitEditModifications, type Modifications } from '@kamaalio/codemod-kit';
 import { arrays, asserts } from '@kamaalio/kamaal';
 
@@ -12,26 +13,28 @@ const VITEST_IMPORT_NAMES = [
   'afterAll',
   'vi',
   'test',
-  'Mock',
 ];
+const VITEST_TYPE_IMPORT_NAMES = ['Mock'];
+const IMPORT_SPECIFIERS_SEARCH_RULE: Rule<TypesMap> = {
+  any: VITEST_IMPORT_NAMES.map<Rule<TypesMap>>(importName => ({
+    pattern: importName,
+    kind: 'identifier',
+  })).concat(VITEST_TYPE_IMPORT_NAMES.map(importName => ({ kind: 'type_identifier', regex: importName }))),
+};
 
 async function addVitestImports(modifications: Modifications): Promise<Modifications> {
   const root = modifications.ast.root();
   const names = arrays
-    .uniques(
-      root
-        .findAll({
-          rule: { any: VITEST_IMPORT_NAMES.map(importName => ({ pattern: importName, kind: 'identifier' })) },
-        })
-        .map(name => name.text()),
-    )
+    .uniques(root.findAll({ rule: IMPORT_SPECIFIERS_SEARCH_RULE }).map(name => name.text()))
     .sort((a, b) => a.localeCompare(b));
   if (names.length === 0) return modifications;
 
   const existingVitestImports = root.findAll({
     rule: { any: [{ pattern: 'import { $$$ } from "vitest"' }, { pattern: "import { $$$ } from 'vitest'" }] },
   });
-  const replacement = `import { ${names.join(', ')} } from 'vitest';`;
+  const replacement = !names.some(name => !VITEST_TYPE_IMPORT_NAMES.includes(name))
+    ? `import type { ${names.join(', ')} } from 'vitest';`
+    : `import { ${names.map(name => (VITEST_TYPE_IMPORT_NAMES.includes(name) ? `type ${name}` : name)).join(', ')} } from 'vitest';`;
   const edits: Array<Edit> = [];
   if (existingVitestImports.length > 0) {
     const importedVitestSpecifiers = existingVitestImports
