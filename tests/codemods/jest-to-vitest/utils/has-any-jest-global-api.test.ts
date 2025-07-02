@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { parseAsync } from '@ast-grep/napi';
 
 import { JEST_TO_VITEST_LANGUAGE } from '../../../../src/codemods/jest-to-vitest/index.js';
-import getJestGlobalApis from '../../../../src/codemods/jest-to-vitest/utils/get-jest-global-apis.js';
+import hasAnyJestGlobalAPI from '../../../../src/codemods/jest-to-vitest/utils/has-any-jest-global-api.js';
 
-describe('getJestGlobalApis', () => {
+describe('hasAnyJestGlobalAPI', () => {
   it('finds jests global apis', async () => {
     const source = `
 import chunked from './chunked';
@@ -20,12 +20,7 @@ describe('chunked', () => {
     const ast = await parseAsync(JEST_TO_VITEST_LANGUAGE, source);
     const root = ast.root();
 
-    const jestGlobalApis = getJestGlobalApis(root);
-
-    expect(jestGlobalApis.length).toBe(3);
-    expect(jestGlobalApis[0]).toBe('describe');
-    expect(jestGlobalApis[1]).toBe('it');
-    expect(jestGlobalApis[2]).toBe('expect');
+    expect(hasAnyJestGlobalAPI(root)).toBe(true);
   });
 
   it('finds jests global apis imported', async () => {
@@ -45,12 +40,7 @@ describe('chunked', () => {
     const ast = await parseAsync(JEST_TO_VITEST_LANGUAGE, source);
     const root = ast.root();
 
-    const jestGlobalApis = getJestGlobalApis(root);
-
-    expect(jestGlobalApis.length).toBe(3);
-    expect(jestGlobalApis[0]).toBe('describe');
-    expect(jestGlobalApis[1]).toBe('it');
-    expect(jestGlobalApis[2]).toBe('expect');
+    expect(hasAnyJestGlobalAPI(root)).toBe(true);
   });
 
   it('does not find jests-like apis if they are imported from somewhere else', async () => {
@@ -77,8 +67,6 @@ test('get started link', async ({ page }) => {
     const ast = await parseAsync(JEST_TO_VITEST_LANGUAGE, source);
     const root = ast.root();
 
-    const jestGlobalApis = getJestGlobalApis(root);
-
-    expect(jestGlobalApis.length).toBe(0);
+    expect(hasAnyJestGlobalAPI(root)).toBe(false);
   });
 });
