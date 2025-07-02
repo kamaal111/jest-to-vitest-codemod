@@ -17,6 +17,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "jest-to-vitest-codemod": "./dist/cli.js"
+  },
   "license": "MIT",
   "packageManager": "pnpm@10.12.4",
   "engines": {

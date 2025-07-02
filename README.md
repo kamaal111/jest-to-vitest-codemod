@@ -105,6 +105,14 @@ describe('my test', () => {
 });
 ```
 
+### CLI
+
+Run the codemod over a directory directly from the command line:
+
+```bash
+npx jest-to-vitest-codemod ./src
+```
+
 ### Advanced Usage with Codemod Framework
 
 ```typescript
