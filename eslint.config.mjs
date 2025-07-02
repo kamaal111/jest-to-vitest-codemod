@@ -7,6 +7,6 @@ export default [
   { languageOptions: { globals: globals.browser } },
   js.configs.recommended,
   ...ts.configs.recommended,
-  { ignores: ['dist/'] },
+  { ignores: ['dist/', 'coverage'] },
   eslintConfigPrettier,
 ];
