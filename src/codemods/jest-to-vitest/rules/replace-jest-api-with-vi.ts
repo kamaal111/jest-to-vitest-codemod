@@ -55,7 +55,7 @@ const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
       const moduleMatch = node.getMatch(MODULE_MATCH_KEY)?.text();
       if (moduleMatch == null) return `vi.mock(${pathMatch})`;
 
-      return `vi.mock(${pathMatch}, () => ({default: ${moduleMatch}})`;
+      return `vi.mock(${pathMatch}, () => ({ default: ${moduleMatch} }))`;
     },
   },
   {
