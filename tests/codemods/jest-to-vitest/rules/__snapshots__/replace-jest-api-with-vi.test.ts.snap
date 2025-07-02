@@ -2,17 +2,17 @@
 
 exports[`jest.clearAllMocks -> vi.clearAllMocks > replaces jest clearAllMocks with vi 1`] = `"vi.clearAllMocks()"`;
 
-exports[`jest.mock -> vi.mock > replaces jest mock with vi 1`] = `"vi.mock('./some-path', () => ({default: 'hello'})"`;
+exports[`jest.mock -> vi.mock > replaces jest mock with vi 1`] = `"vi.mock('./some-path', () => ({ default: 'hello' }))"`;
 
 exports[`jest.mock -> vi.mock > replaces jest mock with vi without module override 1`] = `"vi.mock('./some-path')"`;
 
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual 1`] = `"(await vi.importActual('lodash/cloneDeep'))"`;
 
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual in mock 1`] = `
-"vi.mock('something', async () => ({default: ({
+"vi.mock('something', async () => ({ default: ({
       ...(await vi.importActual('something')),
       mocked: jest.fn()
-    })})"
+    }) }))"
 `;
 
 exports[`jest.resetAllMocks -> vi.resetAllMocks > replaces jest resetAllMocks with vi 1`] = `"vi.resetAllMocks()"`;

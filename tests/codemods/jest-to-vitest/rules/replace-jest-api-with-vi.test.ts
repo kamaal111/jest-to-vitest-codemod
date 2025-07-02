@@ -32,7 +32,7 @@ describe('jest.requireActual -> vi.importActual', () => {
 
     expect(updatedSource).not.toContain(`requireActual`);
     expect(updatedSource).toContain(`await vi.importActual('something')`);
-    expect(updatedSource).toContain(`vi.mock('something', async () => ({`);
+    expect(updatedSource).toContain(`vi.mock('something', async () => ({ default:`);
   });
 });
 
@@ -45,8 +45,7 @@ describe('jest.mock -> vi.mock', () => {
     });
     const updatedSource = modifications.ast.root().text();
 
-    expect(updatedSource).toContain(`vi.mock('./some-path', () => ({`);
-    expect(updatedSource).toContain(`default: 'hello'`);
+    expect(updatedSource).toContain(`vi.mock('./some-path', () => ({ default: 'hello' }))`);
   });
 
   it('replaces jest mock with vi without module override', async () => {
