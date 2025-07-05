@@ -33,14 +33,18 @@ describe('jest.requireActual -> vi.importActual', () => {
     expect(updatedSource).not.toContain(`requireActual`);
     expect(updatedSource).not.toContain('jest');
     expect(updatedSource).toContain(`await vi.importActual('something')`);
-    expect(updatedSource).toContain(`vi.mock('something', async () => ({ default:`);
+    expect(updatedSource).toContain(`vi.mock('something', async () => ({`);
     expect(updatedSource).toContain('mocked: vi.fn()');
   });
 });
 
 describe('jest.mock -> vi.mock', () => {
   it('replaces jest mock with vi', async () => {
-    const source = `jest.mock('./some-path', () => 'hello')`;
+    const source = `
+    import something from './some-path';
+
+    jest.mock('./some-path', () => 'hello')
+    `;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
       return replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
@@ -48,6 +52,21 @@ describe('jest.mock -> vi.mock', () => {
     const updatedSource = modifications.ast.root().text();
 
     expect(updatedSource).toContain(`vi.mock('./some-path', () => ({ default: 'hello' }))`);
+  });
+
+  it('replaces jest mock with vi with specific specifiers', async () => {
+    const source = `
+    import { something } from './some-path';
+
+    jest.mock('./some-path', () => ({ something: jest.fn() }))
+    `;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain(`vi.mock('./some-path', () => ({ something: vi.fn() }))`);
   });
 
   it('replaces jest mock with vi without module override', async () => {
