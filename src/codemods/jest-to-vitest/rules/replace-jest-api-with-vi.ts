@@ -13,6 +13,7 @@ const SIMPLE_JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = Object.en
   'jest.requireActual($ARG)': '(await vi.importActual($ARG))',
   'jest.setTimeout($ARGS)': 'vi.setTimeout({ testTimeout: $ARGS })',
 }).map(([jestApi, vitestApi]) => ({ rule: { pattern: jestApi }, transformer: vitestApi }));
+
 const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
   ...SIMPLE_JEST_TO_VITEST_API_MAPPING,
   {
@@ -26,8 +27,15 @@ const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
       const pathMatch = node.getMatch(PATH_MATCH_KEY)?.text();
       asserts.invariant(pathMatch != null, 'There should be a path match');
 
-      const moduleMatch = node.getMatch(MODULE_MATCH_KEY)?.text();
+      const moduleMatch = node.getMatch(MODULE_MATCH_KEY)?.text().trim();
       if (moduleMatch == null) return `vi.mock(${pathMatch})`;
+
+      const importedAsSpecifier = moduleMatch.startsWith('({');
+      if (importedAsSpecifier) {
+        asserts.invariant(moduleMatch.endsWith('})'));
+
+        return `vi.mock(${pathMatch}, () => ${moduleMatch})`;
+      }
 
       return `vi.mock(${pathMatch}, () => ({ default: ${moduleMatch} }))`;
     },
