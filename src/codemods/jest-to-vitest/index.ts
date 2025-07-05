@@ -77,7 +77,7 @@ export default defineConfig({
   // Configure Vitest (https://vitest.dev/config/)
   test: {},
 });
-  `;
+  `.trim();
 
   await fs.writeFile(path.join(root, 'vitest.config.ts'), vitestConfigContent);
 
@@ -97,10 +97,6 @@ export default defineConfig({
     Object.fromEntries(
       Object.entries({
         ...(packageJson.devDependencies ?? {}),
-        '@types/jest': undefined,
-        'babel-jest': undefined,
-        jest: undefined,
-        'ts-jest': undefined,
         vitest: '^3.2.4',
       }).sort(([a], [b]) => a.localeCompare(b)),
     ),
@@ -108,9 +104,6 @@ export default defineConfig({
   );
   const updatedPackageJson = { ...packageJson, devDependencies };
   await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(updatedPackageJson, null, 2) + '\n');
-
-  const jestConfigs = content.filter(item => item.isFile() && item.name.includes('jest'));
-  await Promise.all(jestConfigs.map(jestConfig => fs.unlink(path.join(root, jestConfig.name))));
 }
 
 export const JEST_TO_VITEST_CODEMOD: Codemod = {
