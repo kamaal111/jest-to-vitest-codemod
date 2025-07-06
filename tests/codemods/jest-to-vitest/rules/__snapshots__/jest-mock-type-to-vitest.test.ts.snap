@@ -1,5 +1,13 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`jestMockTypeToVitest > removes jest from jest.Mock 1`] = `"let fn: Mock<(name: string) => number>"`;
+exports[`jestMockTypeToVitest > removes jest from jest.Mock ['jest'] 1`] = `"let fn: Mock<(name: string) => number>"`;
 
-exports[`jestMockTypeToVitest > removes vi from vi.Mock 1`] = `"let fn: Mock<(name: string) => number>"`;
+exports[`jestMockTypeToVitest > removes jest from jest.Mock ['vi'] 1`] = `"let fn: Mock<(name: string) => number>"`;
+
+exports[`jestMockTypeToVitest > removes jest from jest.Mock and ensure generic param is a function ['jest'] 1`] = `"let fn: Mock<(...params: Array<unknown>) => string>"`;
+
+exports[`jestMockTypeToVitest > removes jest from jest.Mock and ensure generic param is a function ['vi'] 1`] = `"let fn: Mock<(...params: Array<unknown>) => string>"`;
+
+exports[`jestMockTypeToVitest > removes jest from jest.Mock without generic param ['jest'] 1`] = `"let fn: Mock"`;
+
+exports[`jestMockTypeToVitest > removes jest from jest.Mock without generic param ['vi'] 1`] = `"let fn: Mock"`;
