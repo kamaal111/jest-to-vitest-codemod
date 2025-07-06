@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { runCodemods } from '@kamaalio/codemod-kit';
+import { runCodemod } from '@kamaalio/codemod-kit';
 
 import { JEST_TO_VITEST_CODEMOD } from './codemods/jest-to-vitest/index.js';
 
@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  await runCodemods([JEST_TO_VITEST_CODEMOD], target, { rootPaths: [target] });
+  await runCodemod(JEST_TO_VITEST_CODEMOD, target, { rootPaths: [target] });
 }
 
 main().catch(error => {
