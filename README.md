@@ -2,6 +2,34 @@
 
 `@kamaalio/jest-to-vitest-codemod` is a comprehensive collection of codemods to help migrate from Jest to Vitest. It automatically transforms Jest APIs, imports, types, and project configuration to Vitest equivalents.
 
+- [Jest to Vitest codemod](#jest-to-vitest-codemod)
+  - [Features](#features)
+    - [Jest API to Vitest API](#jest-api-to-vitest-api)
+    - [Hook Transformations](#hook-transformations)
+    - [Type Transformations](#type-transformations)
+    - [Import Management](#import-management)
+    - [Project Configuration](#project-configuration)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Basic String Transformation](#basic-string-transformation)
+    - [CLI](#cli)
+    - [Advanced Usage with Codemod Framework](#advanced-usage-with-codemod-framework)
+    - [File Processing with Filename Context](#file-processing-with-filename-context)
+  - [Before/After Examples](#beforeafter-examples)
+    - [Complex Jest Test File](#complex-jest-test-file)
+  - [API Reference](#api-reference)
+    - [Default Export](#default-export)
+    - [Named Exports](#named-exports)
+  - [Behavior and Limitations](#behavior-and-limitations)
+  - [Development](#development)
+    - [Running Tests](#running-tests)
+    - [Building](#building)
+    - [Code Quality](#code-quality)
+  - [Contributing](#contributing)
+    - [Development Setup](#development-setup)
+  - [License](#license)
+
 ## Features
 
 This codemod performs the following transformations:
