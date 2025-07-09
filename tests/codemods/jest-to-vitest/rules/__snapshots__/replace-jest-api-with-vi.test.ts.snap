@@ -2,6 +2,8 @@
 
 exports[`jest.clearAllMocks -> vi.clearAllMocks > replaces jest clearAllMocks with vi 1`] = `"vi.clearAllMocks()"`;
 
+exports[`jest.genMockFromModule -> vi.importMock > replaces jest genMockFromModule with vi importMock 1`] = `"vi.importMock('./path')"`;
+
 exports[`jest.mock -> vi.mock > replaces jest mock with vi 1`] = `
 "import something from './some-path';
 
