@@ -198,3 +198,16 @@ describe('jest.setTimeout -> vi.setTimeout', () => {
     expect(updatedSource).toContain(`vi.setTimeout({ testTimeout: 50_000 })`);
   });
 });
+
+describe('jest.genMockFromModule -> vi.importMock', () => {
+  it('replaces jest genMockFromModule with vi importMock', async () => {
+    const source = `jest.genMockFromModule('./path')`;
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain(`genMockFromModule`);
+    expect(updatedSource).toContain(`vi.importMock('./path')`);
+  });
+});
