@@ -14,7 +14,7 @@ const VITEST_IMPORT_NAMES = [
   'vi',
   'test',
 ];
-const VITEST_TYPE_IMPORT_NAMES = ['Mock'];
+const VITEST_TYPE_IMPORT_NAMES = ['Mock', 'MockInstance'];
 const IMPORT_SPECIFIERS_SEARCH_RULE: Rule<TypesMap> = {
   any: VITEST_IMPORT_NAMES.map<Rule<TypesMap>>(importName => ({
     pattern: importName,

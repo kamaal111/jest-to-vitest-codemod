@@ -52,13 +52,17 @@ export function makeJestToVitestInitialModification(
   };
 }
 
-async function jestToVitestPostTransform({
-  root,
-  results,
-}: {
-  root: string;
-  results: Array<RunCodemodOkResult>;
-}): Promise<void> {
+async function jestToVitestPostTransform(
+  {
+    root,
+    results,
+  }: {
+    root: string;
+    results: Array<RunCodemodOkResult>;
+  },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _codemod: Codemod,
+): Promise<void> {
   if (results.length === 0) return;
 
   let content: Array<Dirent<string>>;
