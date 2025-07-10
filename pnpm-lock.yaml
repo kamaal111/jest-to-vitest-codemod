@@ -12,8 +12,8 @@ importers:
         specifier: ^0.38.6
         version: 0.38.6
       '@kamaalio/codemod-kit':
-        specifier: ^0.0.39
-        version: 0.0.39
+        specifier: ^0.0.41
+        version: 0.0.41
       '@kamaalio/kamaal':
         specifier: ^0.7.8
         version: 0.7.8
@@ -449,8 +449,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.28':
     resolution: {integrity: sha512-KNNHHwW3EIp4EDYOvYFGyIFfx36R2dNJYH4knnZlF8T5jdbD5Wx8xmSaQ2gP9URkJ04LGEtlcCtwArKcmFcwKw==}
 
-  '@kamaalio/codemod-kit@0.0.39':
-    resolution: {integrity: sha512-K7M2f+SYctCnfTiqpWfAL5Gz77haMs66pYAWAxOzPMp68U+QUiLFb0A7DAR0INQwOp8/TQJu6bj7ELSHLOIwuA==}
+  '@kamaalio/codemod-kit@0.0.41':
+    resolution: {integrity: sha512-DeUhFesQaowfnJh65ZN290sSqf2K5/BS/lCbRDFzcn4HnTzviA3UAsMdGI1VjlCio310tQ3vgt8q0V3eqUnncA==}
 
   '@kamaalio/kamaal@0.7.8':
     resolution: {integrity: sha512-G/hWpOEjku48AF8exsc9RmaJ62gXMSdxQC1f4Dr1xAgW0pLh/Ut2RirtbvBFqLWU0+JxhaGenvGix4bvXmmggw==}
@@ -1999,7 +1999,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.3
 
-  '@kamaalio/codemod-kit@0.0.39':
+  '@kamaalio/codemod-kit@0.0.41':
     dependencies:
       '@ast-grep/napi': 0.38.6
       '@kamaalio/kamaal': 0.7.8

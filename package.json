@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@ast-grep/napi": "^0.38.6",
-    "@kamaalio/codemod-kit": "^0.0.39",
+    "@kamaalio/codemod-kit": "^0.0.41",
     "@kamaalio/kamaal": "^0.7.8"
   },
   "devDependencies": {
