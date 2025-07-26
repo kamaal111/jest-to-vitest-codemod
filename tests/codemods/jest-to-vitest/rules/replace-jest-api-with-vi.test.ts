@@ -69,6 +69,32 @@ describe('jest.mock -> vi.mock', () => {
     expect(updatedSource).toContain(`vi.mock('./some-path', () => ({ something: vi.fn() }))`);
   });
 
+  it('replaces jest mock with vi with return', async () => {
+    const source = `
+    jest.mock('nanoid', () => {
+      return jest.fn(() => {
+        mockValue += 1;
+        return \`key\${mockValue}\`;
+      });
+    });
+    `;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    const expectedUpdatedSource = `
+    vi.mock('nanoid', () => {
+      return vi.fn(() => {
+        mockValue += 1;
+        return \`key\${mockValue}\`;
+      });
+    });
+    `.trim();
+    expect(updatedSource).toEqual(expectedUpdatedSource);
+  });
+
   it('replaces jest mock with vi without module override', async () => {
     const source = `
     jest.mock('./some-path')
