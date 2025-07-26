@@ -16,6 +16,8 @@ import removeJestImport from './rules/remove-jest-import.js';
 
 export const JEST_TO_VITEST_LANGUAGE = Lang.TypeScript;
 
+const ESLINT_VERSION = '^3.2.4';
+
 function jestToVitestFilter(root: SgNode<TypesMap, Kinds<TypesMap>>): boolean {
   return hasAnyJestGlobalAPI(root);
 }
@@ -101,7 +103,7 @@ export default defineConfig({
     Object.fromEntries(
       Object.entries({
         ...(packageJson.devDependencies ?? {}),
-        vitest: '^3.2.4',
+        vitest: ESLINT_VERSION,
       }).sort(([a], [b]) => a.localeCompare(b)),
     ),
     item => item == null,
