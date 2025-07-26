@@ -10,6 +10,15 @@ exports[`jest.mock -> vi.mock > replaces jest mock with vi 1`] = `
     vi.mock('./some-path', () => ({ default: 'hello' }))"
 `;
 
+exports[`jest.mock -> vi.mock > replaces jest mock with vi with return 1`] = `
+"vi.mock('nanoid', () => {
+      return vi.fn(() => {
+        mockValue += 1;
+        return \`key\${mockValue}\`;
+      });
+    });"
+`;
+
 exports[`jest.mock -> vi.mock > replaces jest mock with vi with specific specifiers 1`] = `
 "import { something } from './some-path';
 
