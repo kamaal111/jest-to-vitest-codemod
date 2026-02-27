@@ -9,7 +9,7 @@ export default [
   ...ts.configs.recommended,
   {
     rules: {
-      'no-unused-vars': 'off',
+      'no-unused-vars': ['error', { args: 'none' }],
       '@typescript-eslint/no-unused-vars': 'error',
     },
   },
