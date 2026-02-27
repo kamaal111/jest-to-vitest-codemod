@@ -55,3 +55,45 @@ describe('jestMockTypeToVitest', () => {
     });
   });
 });
+
+describe('jest.Mocked -> Mocked', () => {
+  it.fails('replaces jest.Mocked with Mocked', async () => {
+    const source = `let mocked: jest.Mocked<SomeClass>`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('jest.Mocked');
+    expect(updatedSource).toContain('Mocked<SomeClass>');
+  });
+});
+
+describe('jest.MockedFunction -> MockedFunction', () => {
+  it.fails('replaces jest.MockedFunction with MockedFunction', async () => {
+    const source = `let fn: jest.MockedFunction<typeof someFunction>`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('jest.MockedFunction');
+    expect(updatedSource).toContain('MockedFunction<typeof someFunction>');
+  });
+});
+
+describe('jest.MockedClass -> MockedClass', () => {
+  it.fails('replaces jest.MockedClass with MockedClass', async () => {
+    const source = `let cls: jest.MockedClass<typeof SomeClass>`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('jest.MockedClass');
+    expect(updatedSource).toContain('MockedClass<typeof SomeClass>');
+  });
+});

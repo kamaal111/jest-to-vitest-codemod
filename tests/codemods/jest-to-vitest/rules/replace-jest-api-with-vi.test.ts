@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseAsync } from '@ast-grep/napi';
 
 import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
@@ -234,6 +235,18 @@ describe('jest.genMockFromModule -> vi.importMock', () => {
     const updatedSource = modifications.ast.root().text();
 
     expect(updatedSource).not.toContain(`genMockFromModule`);
+    expect(updatedSource).toContain(`vi.importMock('./path')`);
+  });
+});
+
+describe('jest.createMockFromModule -> vi.importMock', () => {
+  it.fails('replaces jest.createMockFromModule with vi.importMock', async () => {
+    const source = `jest.createMockFromModule('./path')`;
+    const ast = await parseAsync(JEST_TO_VITEST_LANGUAGE, source.trim());
+    const modifications = await replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('createMockFromModule');
     expect(updatedSource).toContain(`vi.importMock('./path')`);
   });
 });
