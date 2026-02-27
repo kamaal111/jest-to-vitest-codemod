@@ -7,9 +7,13 @@ const JEST_GLOBAL_APIS = [
   'beforeAll',
   'beforeEach',
   'describe',
+  'fdescribe',
+  'xdescribe',
   'test',
+  'xtest',
   'it',
   'fit',
+  'xit',
   'expect',
 ];
 

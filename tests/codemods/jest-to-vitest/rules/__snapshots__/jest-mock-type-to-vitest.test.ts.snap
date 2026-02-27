@@ -1,5 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`jest.Mocked -> Mocked > replaces jest.Mocked with Mocked 1`] = `"let mocked: Mocked<SomeClass>"`;
+
+exports[`jest.MockedClass -> MockedClass > replaces jest.MockedClass with MockedClass 1`] = `"let cls: MockedClass<typeof SomeClass>"`;
+
+exports[`jest.MockedFunction -> MockedFunction > replaces jest.MockedFunction with MockedFunction 1`] = `"let fn: MockedFunction<typeof someFunction>"`;
+
 exports[`jestMockTypeToVitest > removes jest from jest.Mock ['jest'] 1`] = `"let fn: Mock<(name: string) => number>"`;
 
 exports[`jestMockTypeToVitest > removes jest from jest.Mock ['vi'] 1`] = `"let fn: Mock<(name: string) => number>"`;

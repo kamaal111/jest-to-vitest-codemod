@@ -237,3 +237,17 @@ describe('jest.genMockFromModule -> vi.importMock', () => {
     expect(updatedSource).toContain(`vi.importMock('./path')`);
   });
 });
+
+describe('jest.createMockFromModule -> vi.importMock', () => {
+  it('replaces jest.createMockFromModule with vi.importMock', async () => {
+    const source = `jest.createMockFromModule('./path')`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return replaceJestApiWithVi(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('createMockFromModule');
+    expect(updatedSource).toContain(`vi.importMock('./path')`);
+  });
+});

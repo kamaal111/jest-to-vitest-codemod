@@ -9,6 +9,7 @@ import { type types, objects } from '@kamaalio/kamaal';
 
 import hasAnyJestGlobalAPI from './utils/has-any-jest-global-api.js';
 import replaceJestApiWithVi from './rules/replace-jest-api-with-vi.js';
+import jestFocusedSkippedToVitest from './rules/jest-focused-skipped-to-vitest.js';
 import jestHooksToVitest from './rules/jest-hooks-to-vitest.js';
 import jestMockTypeToVitest from './rules/jest-mock-type-to-vitest.js';
 import addVitestImports from './rules/add-vitest-imports.js';
@@ -27,6 +28,7 @@ export async function jestToVitestModifications(modifications: Modifications): P
   if (!jestToVitestFilter(root)) return modifications;
 
   return replaceJestApiWithVi(modifications)
+    .then(jestFocusedSkippedToVitest)
     .then(jestHooksToVitest)
     .then(jestMockTypeToVitest)
     .then(addVitestImports)

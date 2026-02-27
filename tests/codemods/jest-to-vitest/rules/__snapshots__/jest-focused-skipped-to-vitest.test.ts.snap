@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`fdescribe -> describe.only > replaces fdescribe with describe.only 1`] = `"describe.only('group name', () => { it('test', () => {}) })"`;
+
+exports[`fit -> it.only > replaces fit with it.only 1`] = `"it.only('test name', () => { expect(true).toBe(true) })"`;
+
+exports[`xdescribe -> describe.skip > replaces xdescribe with describe.skip 1`] = `"describe.skip('group name', () => { it('test', () => {}) })"`;
+
+exports[`xit -> it.skip > replaces xit with it.skip 1`] = `"it.skip('test name', () => { expect(true).toBe(true) })"`;
+
+exports[`xtest -> it.skip > replaces xtest with it.skip 1`] = `"it.skip('test name', () => { expect(true).toBe(true) })"`;

@@ -31,7 +31,7 @@
     "dev": "rslib build --watch",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 0",
     "prepare": "husky",
     "test": "vitest run",
     "test:cov": "pnpm install && vitest run --coverage",
