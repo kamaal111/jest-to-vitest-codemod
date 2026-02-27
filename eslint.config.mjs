@@ -7,6 +7,12 @@ export default [
   { languageOptions: { globals: globals.browser } },
   js.configs.recommended,
   ...ts.configs.recommended,
+  {
+    rules: {
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'error',
+    },
+  },
   { ignores: ['dist/', 'coverage'] },
   eslintConfigPrettier,
 ];
