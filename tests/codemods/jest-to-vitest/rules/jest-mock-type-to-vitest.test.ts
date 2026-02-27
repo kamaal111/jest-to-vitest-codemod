@@ -57,7 +57,7 @@ describe('jestMockTypeToVitest', () => {
 });
 
 describe('jest.Mocked -> Mocked', () => {
-  it.fails('replaces jest.Mocked with Mocked', async () => {
+  it('replaces jest.Mocked with Mocked', async () => {
     const source = `let mocked: jest.Mocked<SomeClass>`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -71,7 +71,7 @@ describe('jest.Mocked -> Mocked', () => {
 });
 
 describe('jest.MockedFunction -> MockedFunction', () => {
-  it.fails('replaces jest.MockedFunction with MockedFunction', async () => {
+  it('replaces jest.MockedFunction with MockedFunction', async () => {
     const source = `let fn: jest.MockedFunction<typeof someFunction>`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -85,7 +85,7 @@ describe('jest.MockedFunction -> MockedFunction', () => {
 });
 
 describe('jest.MockedClass -> MockedClass', () => {
-  it.fails('replaces jest.MockedClass with MockedClass', async () => {
+  it('replaces jest.MockedClass with MockedClass', async () => {
     const source = `let cls: jest.MockedClass<typeof SomeClass>`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {

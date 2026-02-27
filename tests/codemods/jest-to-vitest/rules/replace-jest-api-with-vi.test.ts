@@ -240,7 +240,7 @@ describe('jest.genMockFromModule -> vi.importMock', () => {
 });
 
 describe('jest.createMockFromModule -> vi.importMock', () => {
-  it.fails('replaces jest.createMockFromModule with vi.importMock', async () => {
+  it('replaces jest.createMockFromModule with vi.importMock', async () => {
     const source = `jest.createMockFromModule('./path')`;
     const ast = await parseAsync(JEST_TO_VITEST_LANGUAGE, source.trim());
     const modifications = await replaceJestApiWithVi(makeJestToVitestInitialModification(ast));

@@ -5,7 +5,7 @@ import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '..
 import jestFocusedSkippedToVitest from '../../../../src/codemods/jest-to-vitest/rules/jest-focused-skipped-to-vitest';
 
 describe('fit -> it.only', () => {
-  it.fails('replaces fit with it.only', async () => {
+  it('replaces fit with it.only', async () => {
     const source = `fit('test name', () => { expect(true).toBe(true) })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -19,7 +19,7 @@ describe('fit -> it.only', () => {
 });
 
 describe('fdescribe -> describe.only', () => {
-  it.fails('replaces fdescribe with describe.only', async () => {
+  it('replaces fdescribe with describe.only', async () => {
     const source = `fdescribe('group name', () => { it('test', () => {}) })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -33,7 +33,7 @@ describe('fdescribe -> describe.only', () => {
 });
 
 describe('xit -> it.skip', () => {
-  it.fails('replaces xit with it.skip', async () => {
+  it('replaces xit with it.skip', async () => {
     const source = `xit('test name', () => { expect(true).toBe(true) })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -47,7 +47,7 @@ describe('xit -> it.skip', () => {
 });
 
 describe('xtest -> it.skip', () => {
-  it.fails('replaces xtest with it.skip', async () => {
+  it('replaces xtest with it.skip', async () => {
     const source = `xtest('test name', () => { expect(true).toBe(true) })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -61,7 +61,7 @@ describe('xtest -> it.skip', () => {
 });
 
 describe('xdescribe -> describe.skip', () => {
-  it.fails('replaces xdescribe with describe.skip', async () => {
+  it('replaces xdescribe with describe.skip', async () => {
     const source = `xdescribe('group name', () => { it('test', () => {}) })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {

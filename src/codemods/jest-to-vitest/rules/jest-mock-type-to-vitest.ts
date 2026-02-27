@@ -10,7 +10,16 @@ const TEST_FRAMEWORK_NAMES = ['jest', 'vi'];
 const EDIT_CONFIGS: Array<FindAndReplaceConfig> = [
   {
     rule: {
-      any: TEST_FRAMEWORK_NAMES.map(prefix => ({ kind: 'nested_type_identifier', regex: `${prefix}\\.Mock` })),
+      any: ['Mocked', 'MockedFunction', 'MockedClass'].map(typeName => ({
+        kind: 'nested_type_identifier',
+        regex: `^jest\\.${typeName}$`,
+      })),
+    },
+    transformer: node => node.text().split('.')[1],
+  },
+  {
+    rule: {
+      any: TEST_FRAMEWORK_NAMES.map(prefix => ({ kind: 'nested_type_identifier', regex: `^${prefix}\\.Mock$` })),
     },
     transformer: node => {
       const parent = node.parent();

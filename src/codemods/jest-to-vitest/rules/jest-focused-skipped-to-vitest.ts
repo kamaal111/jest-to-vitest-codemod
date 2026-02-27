@@ -1,13 +1,27 @@
-import type { Modifications } from '@kamaalio/codemod-kit';
+import {
+  findAndReplaceConfigModifications,
+  type FindAndReplaceConfig,
+  type Modifications,
+} from '@kamaalio/codemod-kit';
 
-// TODO: Implement transformations for Jest's focused and skipped test aliases:
-// - fit(name, fn)       -> it.only(name, fn)
-// - fdescribe(name, fn) -> describe.only(name, fn)
-// - xit(name, fn)       -> it.skip(name, fn)
-// - xtest(name, fn)     -> it.skip(name, fn)
-// - xdescribe(name, fn) -> describe.skip(name, fn)
+const FOCUSED_SKIPPED_MAPPING: Array<{ source: string; target: string }> = [
+  { source: 'fit', target: 'it.only' },
+  { source: 'fdescribe', target: 'describe.only' },
+  { source: 'xit', target: 'it.skip' },
+  { source: 'xtest', target: 'it.skip' },
+  { source: 'xdescribe', target: 'describe.skip' },
+];
+
+const FOCUSED_SKIPPED_CONFIGS: Array<FindAndReplaceConfig> = FOCUSED_SKIPPED_MAPPING.map(({ source, target }) => ({
+  rule: { pattern: `${source}($$$ARGS)` },
+  transformer: node => {
+    const text = node.text();
+    return `${target}(${text.slice(source.length + 1, -1)})`;
+  },
+}));
+
 async function jestFocusedSkippedToVitest(modifications: Modifications): Promise<Modifications> {
-  return modifications;
+  return findAndReplaceConfigModifications(modifications, FOCUSED_SKIPPED_CONFIGS);
 }
 
 export default jestFocusedSkippedToVitest;
