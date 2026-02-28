@@ -43,4 +43,64 @@ describe('cli', () => {
     const updated = await readFile(filePath, 'utf-8');
     expect(updated).toContain("from 'vitest'");
   });
+
+  it('generates vitest config from jest config properties', async () => {
+    const filePath = join(tempDir, 'test.spec.ts');
+    const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
+    await writeFile(filePath, source);
+
+    const jestConfig = `import type { Config } from 'jest';
+
+const config: Config = {
+  testEnvironment: 'node',
+  testTimeout: 10000,
+  clearMocks: true,
+  resetMocks: false,
+  restoreMocks: true,
+  testMatch: ['**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/'],
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: ['src/**/*.ts'],
+  coverageReporters: ['text', 'lcov'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+};
+
+export default config;`;
+    await writeFile(join(tempDir, 'jest.config.ts'), jestConfig);
+
+    runCli(tempDir);
+
+    const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
+    expect(vitestConfig).toContain("environment: 'node'");
+    expect(vitestConfig).toContain('testTimeout: 10000');
+    expect(vitestConfig).toContain('clearMocks: true');
+    expect(vitestConfig).toContain('mockReset: false');
+    expect(vitestConfig).toContain('restoreMocks: true');
+    expect(vitestConfig).toContain("include: ['**/*.test.ts']");
+    expect(vitestConfig).toContain("dir: 'coverage'");
+    expect(vitestConfig).toContain("include: ['src/**/*.ts']");
+    expect(vitestConfig).toContain("reporter: ['text', 'lcov']");
+    expect(vitestConfig).toContain('thresholds:');
+    expect(vitestConfig).toContain('branches: 80');
+  });
+
+  it('generates a basic vitest config when no jest config is present', async () => {
+    const filePath = join(tempDir, 'test.spec.ts');
+    const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
+    await writeFile(filePath, source);
+
+    runCli(tempDir);
+
+    const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
+    expect(vitestConfig).toContain("from 'vitest/config'");
+    expect(vitestConfig).toContain('defineConfig');
+    expect(vitestConfig).toContain('test:');
+  });
 });
