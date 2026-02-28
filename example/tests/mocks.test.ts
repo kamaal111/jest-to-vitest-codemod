@@ -24,8 +24,9 @@ afterAll(() => jest.useRealTimers());
 
 describe('mock transformation cases', () => {
   beforeEach(() => {
-    logSpy = jest.spyOn(console, 'log');
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     mockedAdd = add as jest.MockedFunction<typeof add>;
+    mockedAdd.mockImplementation(() => 99);
     mockedLogger = { log: jest.fn() } as jest.Mocked<ReturnType<typeof createLogger>>;
     mockedGreeter = Greeter as unknown as jest.MockedClass<typeof Greeter>;
   });
@@ -33,6 +34,7 @@ describe('mock transformation cases', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.resetAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('mocked add returns 99', () => {

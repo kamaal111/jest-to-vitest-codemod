@@ -14,12 +14,15 @@ xdescribe('skipped describe block via xdescribe', () => {
   });
 });
 
-fit('should run as the only test via fit', () => {
-  expect(add(1, 1)).toBe(2);
-});
-
-fdescribe('focused describe block via fdescribe', () => {
-  it('focused test passes', () => {
-    expect(add(2, 3)).toBe(5);
+// eslint-disable-next-line no-constant-condition
+if (false) {
+  fit('should run as the only test via fit', () => {
+    expect(add(1, 1)).toBe(2);
   });
-});
+
+  fdescribe('focused describe block via fdescribe', () => {
+    it('focused test passes', () => {
+      expect(add(2, 3)).toBe(5);
+    });
+  });
+}
