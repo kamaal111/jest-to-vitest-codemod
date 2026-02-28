@@ -14,6 +14,7 @@ import jestHooksToVitest from './rules/jest-hooks-to-vitest.js';
 import jestMockTypeToVitest from './rules/jest-mock-type-to-vitest.js';
 import addVitestImports from './rules/add-vitest-imports.js';
 import removeJestImport from './rules/remove-jest-import.js';
+import { buildVitestConfigContent, extractVitestConfigFromJestConfig } from './utils/jest-config-to-vitest-config.js';
 
 export const JEST_TO_VITEST_LANGUAGE = Lang.TypeScript;
 
@@ -59,7 +60,6 @@ export function makeJestToVitestInitialModification(
 async function jestToVitestPostTransform(
   {
     root,
-    results,
   }: {
     root: string;
     results: Array<RunCodemodOkResult>;
@@ -67,8 +67,6 @@ async function jestToVitestPostTransform(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _codemod: Codemod,
 ): Promise<void> {
-  if (results.length === 0) return;
-
   let content: Array<Dirent<string>>;
   try {
     content = await fs.readdir(root, { withFileTypes: true });
@@ -79,13 +77,29 @@ async function jestToVitestPostTransform(
   const existingVitestConfig = content.find(item => item.isFile() && item.name.startsWith('vitest.config.'));
   if (existingVitestConfig != null) return;
 
-  const vitestConfigContent = `import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  // Configure Vitest (https://vitest.dev/config/)
-  test: {},
-});
-  `.trim();
+  const jestConfigFile = content.find(item => item.isFile() && item.name.startsWith('jest.config.'));
+  let vitestConfigContent: string;
+  if (jestConfigFile != null) {
+    try {
+      const jestConfigContent = await fs.readFile(path.join(root, jestConfigFile.name), {
+        encoding: 'utf-8',
+      });
+      const mapping = await extractVitestConfigFromJestConfig(jestConfigContent);
+      vitestConfigContent = buildVitestConfigContent(mapping);
+    } catch {
+      vitestConfigContent = buildVitestConfigContent({
+        testProperties: [],
+        coverageProperties: [],
+        coverageThresholds: null,
+      });
+    }
+  } else {
+    vitestConfigContent = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+    });
+  }
 
   await fs.writeFile(path.join(root, 'vitest.config.ts'), vitestConfigContent);
 
