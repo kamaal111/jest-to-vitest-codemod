@@ -14,5 +14,11 @@ export default [
     },
   },
   { ignores: ['dist/', 'coverage'] },
+  {
+    files: ['example/**'],
+    rules: {
+      'no-constant-condition': 'off',
+    },
+  },
   eslintConfigPrettier,
 ];
