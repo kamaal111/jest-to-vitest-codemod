@@ -58,6 +58,8 @@ jobs:
     name: Example App Transformation
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Git - Checkout
         uses: actions/checkout@v4
