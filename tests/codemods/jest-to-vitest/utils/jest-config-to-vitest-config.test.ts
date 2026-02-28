@@ -80,12 +80,11 @@ describe('extractVitestConfigFromJestConfig', () => {
     expect(include?.[1]).toContain("'**/*.spec.ts'");
   });
 
-  it('maps testPathIgnorePatterns to exclude', async () => {
+  it('does not map testPathIgnorePatterns (semantics differ between jest regex and vitest glob)', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
-    const exclude = mapping.testProperties.find(([key]) => key === 'exclude');
-    expect(exclude).toBeDefined();
-    expect(exclude?.[1]).toContain("'/node_modules/'");
+    const testPropsKeys = mapping.testProperties.map(([key]) => key);
+    expect(testPropsKeys).not.toContain('exclude');
   });
 
   it('skips empty setupFilesAfterEnv', async () => {
@@ -95,6 +94,61 @@ describe('extractVitestConfigFromJestConfig', () => {
     expect(setupFiles).toBeUndefined();
   });
 
+  it('merges non-empty setupFiles and setupFilesAfterEnv into a single setupFiles array', async () => {
+    const config = `const config = {
+  setupFiles: ['./setup1.ts'],
+  setupFilesAfterEnv: ['./setupAfterEnv.ts'],
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
+    expect(setupFiles).toBeDefined();
+    expect(setupFiles?.[1]).toContain("...['./setup1.ts']");
+    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+  });
+
+  it('only merges setupFilesAfterEnv when setupFiles is absent', async () => {
+    const config = `const config = {
+  setupFilesAfterEnv: ['./setupAfterEnv.ts'],
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
+    expect(setupFiles).toBeDefined();
+    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+  });
+
+  it('treats empty array with spaces as an empty collection', async () => {
+    const config = `const config = {
+  setupFiles: [  ],
+  testEnvironment: 'node',
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
+    expect(setupFiles).toBeUndefined();
+
+    const environment = mapping.testProperties.find(([key]) => key === 'environment');
+    expect(environment).toBeDefined();
+  });
+
+  it('treats empty object with spaces as an empty collection', async () => {
+    const config = `const config = {
+  coverageThreshold: {  },
+  testEnvironment: 'node',
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.coverageThresholds).toBeNull();
+
+    const environment = mapping.testProperties.find(([key]) => key === 'environment');
+    expect(environment).toBeDefined();
+  });
+
   it('maps coverageDirectory to coverage.dir', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
@@ -102,12 +156,22 @@ describe('extractVitestConfigFromJestConfig', () => {
     expect(dir?.[1]).toBe("'coverage'");
   });
 
-  it('maps collectCoverageFrom to coverage.include', async () => {
+  it('maps non-negated collectCoverageFrom entries to coverage.include', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
     const include = mapping.coverageProperties.find(([key]) => key === 'include');
     expect(include).toBeDefined();
     expect(include?.[1]).toContain("'src/**/*.ts'");
+    expect(include?.[1]).not.toContain('!');
+  });
+
+  it('maps negated collectCoverageFrom entries to coverage.exclude', async () => {
+    const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
+
+    const exclude = mapping.coverageProperties.find(([key]) => key === 'exclude');
+    expect(exclude).toBeDefined();
+    expect(exclude?.[1]).toContain("'src/**/*.d.ts'");
+    expect(exclude?.[1]).not.toContain('!');
   });
 
   it('maps coverageReporters to coverage.reporter', async () => {
@@ -138,6 +202,20 @@ describe('extractVitestConfigFromJestConfig', () => {
     expect(keys).not.toContain('roots');
     expect(keys).not.toContain('globals');
     expect(keys).not.toContain('moduleNameMapper');
+  });
+
+  it('does not pick up nested properties as top-level config', async () => {
+    const config = `const config = {
+  globals: {
+    testEnvironment: 'wrongvalue',
+  },
+  testEnvironment: 'node',
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    const environment = mapping.testProperties.find(([key]) => key === 'environment');
+    expect(environment?.[1]).toBe("'node'");
   });
 
   it('returns empty mapping for config with no mappable properties', async () => {
