@@ -14,7 +14,6 @@ xdescribe('skipped describe block via xdescribe', () => {
   });
 });
 
-// eslint-disable-next-line no-constant-condition
 if (false) {
   fit('should run as the only test via fit', () => {
     expect(add(1, 1)).toBe(2);
