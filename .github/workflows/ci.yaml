@@ -53,3 +53,42 @@ jobs:
 
       - name: Run tests
         run: pnpm test:cov
+
+  example:
+    name: Example App Transformation
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git - Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+
+      - name: Use Node 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: https://registry.npmjs.org
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build codemod
+        run: pnpm build
+
+      - name: Run codemod on example app
+        run: node dist/cli.js example
+
+      - name: Install example app dependencies
+        working-directory: example
+        run: |
+          pnpm add -D vitest@^3.2.4
+          pnpm install
+
+      - name: Run transformed tests
+        working-directory: example
+        run: npx vitest run
