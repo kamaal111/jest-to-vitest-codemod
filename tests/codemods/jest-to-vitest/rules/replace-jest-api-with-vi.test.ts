@@ -212,7 +212,7 @@ describe('jest.useRealTimers -> vi.useRealTimers', () => {
   });
 });
 
-describe('jest.setTimeout -> vi.setTimeout', () => {
+describe('jest.setTimeout -> vi.setConfig', () => {
   it('replaces jest setTimeout with vi', async () => {
     const source = `jest.setTimeout(50_000)`;
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -221,7 +221,7 @@ describe('jest.setTimeout -> vi.setTimeout', () => {
     const updatedSource = modifications.ast.root().text();
 
     expect(updatedSource).not.toContain(`jest.setTimeout`);
-    expect(updatedSource).toContain(`vi.setTimeout({ testTimeout: 50_000 })`);
+    expect(updatedSource).toContain(`vi.setConfig({ testTimeout: 50_000 })`);
   });
 });
 

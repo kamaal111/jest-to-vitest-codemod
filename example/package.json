@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
