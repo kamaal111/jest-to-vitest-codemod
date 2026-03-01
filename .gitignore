@@ -176,5 +176,6 @@ dist
 
 # Example app
 example/node_modules/
+example/package-lock.json
 
 # End of https://www.toptal.com/developers/gitignore/api/node,macos

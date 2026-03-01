@@ -11,7 +11,7 @@ const MODULE_MATCH_KEY = 'MODULE';
 
 const SIMPLE_JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = Object.entries({
   'jest.requireActual($ARG)': '(await vi.importActual($ARG))',
-  'jest.setTimeout($ARGS)': 'vi.setTimeout({ testTimeout: $ARGS })',
+  'jest.setTimeout($ARGS)': 'vi.setConfig({ testTimeout: $ARGS })',
   'jest.createMockFromModule': 'vi.importMock',
   'jest.genMockFromModule': 'vi.importMock',
   'jest.fn': 'vi.fn',

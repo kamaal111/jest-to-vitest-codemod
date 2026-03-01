@@ -42,7 +42,7 @@ exports[`jest.resetAllMocks -> vi.resetAllMocks > replaces jest resetAllMocks wi
 
 exports[`jest.restoreAllMocks -> vi.restoreAllMocks > replaces jest restoreAllMocks with vi 1`] = `"vi.restoreAllMocks()"`;
 
-exports[`jest.setTimeout -> vi.setTimeout > replaces jest setTimeout with vi 1`] = `"vi.setTimeout({ testTimeout: 50_000 })"`;
+exports[`jest.setTimeout -> vi.setConfig > replaces jest setTimeout with vi 1`] = `"vi.setConfig({ testTimeout: 50_000 })"`;
 
 exports[`jest.spyOn -> vi.spyOn > replaces jest spyOn with vi 1`] = `"vi.spyOn(modules, 'path', 'key')"`;
 

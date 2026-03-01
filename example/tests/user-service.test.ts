@@ -22,7 +22,9 @@ describe('user-service', () => {
   describe('createNotifier', () => {
     let mockCallback: jest.Mock;
 
-    beforeEach(() => (mockCallback = jest.fn()));
+    beforeEach(() => {
+      mockCallback = jest.fn();
+    });
 
     it('should call the callback with a greeting', () => {
       const notifier = createNotifier(mockCallback);
