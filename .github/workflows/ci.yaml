@@ -81,18 +81,22 @@ jobs:
 
       - name: Install example app dependencies
         working-directory: example
-        run: pnpm install
+        run: npm install
 
       - name: Type-check example app (before transformation)
         working-directory: example
-        run: pnpm type-check
+        run: npm run type-check
 
       - name: Lint example app (before transformation)
         run: pnpm exec eslint --max-warnings 0 example
 
       - name: Run example tests with Jest (before transformation)
         working-directory: example
-        run: pnpm test
+        run: npx jest
+
+      - name: Clean example app dependencies (before codemod)
+        working-directory: example
+        run: rm -rf node_modules
 
       - name: Build codemod
         run: pnpm build
@@ -103,12 +107,12 @@ jobs:
       - name: Install example app dependencies (after transformation)
         working-directory: example
         run: |
-          pnpm add -D vitest
-          pnpm install
+          npm install --save-dev vitest
+          npm install
 
       - name: Type-check example app (after transformation)
         working-directory: example
-        run: pnpm type-check
+        run: npm run type-check
 
       - name: Lint example app (after transformation)
         run: pnpm exec eslint --max-warnings 0 example
