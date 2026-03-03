@@ -7,6 +7,7 @@ import type { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes.js';
 import type { Codemod, Modifications, RunCodemodOkResult } from '@kamaalio/codemod-kit';
 import { type types, objects } from '@kamaalio/kamaal';
 
+import packageJSON from '../../../package.json';
 import hasAnyJestGlobalAPI from './utils/has-any-jest-global-api.js';
 import replaceJestApiWithVi from './rules/replace-jest-api-with-vi.js';
 import jestFocusedSkippedToVitest from './rules/jest-focused-skipped-to-vitest.js';
@@ -17,8 +18,6 @@ import removeJestImport from './rules/remove-jest-import.js';
 import { buildVitestConfigContent, extractVitestConfigFromJestConfig } from './utils/jest-config-to-vitest-config.js';
 
 export const JEST_TO_VITEST_LANGUAGE = Lang.TypeScript;
-
-const ESLINT_VERSION = '^3.2.4';
 
 function jestToVitestFilter(root: SgNode<TypesMap, Kinds<TypesMap>>): boolean {
   return hasAnyJestGlobalAPI(root);
@@ -119,7 +118,7 @@ async function jestToVitestPostTransform(
     Object.fromEntries(
       Object.entries({
         ...(packageJson.devDependencies ?? {}),
-        vitest: ESLINT_VERSION,
+        vitest: packageJSON.devDependencies.vitest,
       }).sort(([a], [b]) => a.localeCompare(b)),
     ),
     item => item == null,
