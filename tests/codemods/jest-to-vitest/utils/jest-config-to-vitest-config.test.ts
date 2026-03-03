@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildVitestConfigContent,
+  extractTsconfigPathAliases,
   extractVitestConfigFromJestConfig,
 } from '../../../../src/codemods/jest-to-vitest/utils/jest-config-to-vitest-config.js';
 
@@ -265,5 +266,157 @@ describe('buildVitestConfigContent', () => {
     expect(content).toContain('coverage:');
     expect(content).toContain("dir: 'coverage'");
     expect(content).toContain('thresholds: { branches: 80 }');
+  });
+
+  it('generates resolve.alias section with fileURLToPath import when path aliases are provided', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      pathAliases: [['@', './src']],
+    });
+
+    expect(content).toContain("import { fileURLToPath } from 'node:url'");
+    expect(content).toContain('resolve:');
+    expect(content).toContain('alias:');
+    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+  });
+
+  it('generates multiple aliases in resolve.alias', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      pathAliases: [
+        ['@', './src'],
+        ['~components', './src/components'],
+      ],
+    });
+
+    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+    expect(content).toContain("'~components': fileURLToPath(new URL('./src/components', import.meta.url))");
+  });
+
+  it('does not add fileURLToPath import when no path aliases are provided', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [['environment', "'node'"]],
+      coverageProperties: [],
+      coverageThresholds: null,
+    });
+
+    expect(content).not.toContain('fileURLToPath');
+    expect(content).not.toContain('resolve:');
+  });
+
+  it('generates config with both test properties and path aliases', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [['environment', "'node'"]],
+      coverageProperties: [],
+      coverageThresholds: null,
+      pathAliases: [['@', './src']],
+    });
+
+    expect(content).toContain("environment: 'node'");
+    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+  });
+});
+
+describe('extractTsconfigPathAliases', () => {
+  it('extracts path aliases from compilerOptions.paths', () => {
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '@/*': ['./src/*'],
+        },
+      },
+    });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(1);
+    expect(aliases[0]).toEqual(['@', './src']);
+  });
+
+  it('strips /* suffix from both alias key and path value', () => {
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '~components/*': ['src/components/*'],
+        },
+      },
+    });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(1);
+    expect(aliases[0]).toEqual(['~components', 'src/components']);
+  });
+
+  it('extracts multiple path aliases', () => {
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '@/*': ['./src/*'],
+          '~utils/*': ['./src/utils/*'],
+        },
+      },
+    });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(2);
+    expect(aliases.find(([key]) => key === '@')?.[1]).toBe('./src');
+    expect(aliases.find(([key]) => key === '~utils')?.[1]).toBe('./src/utils');
+  });
+
+  it('returns empty array when compilerOptions.paths is absent', () => {
+    const tsconfig = JSON.stringify({ compilerOptions: { target: 'ES2022' } });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(0);
+  });
+
+  it('returns empty array when compilerOptions is absent', () => {
+    const tsconfig = JSON.stringify({ include: ['src'] });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(0);
+  });
+
+  it('returns empty array for invalid JSON', () => {
+    const aliases = extractTsconfigPathAliases('not valid json {');
+
+    expect(aliases).toHaveLength(0);
+  });
+
+  it('skips path entries with an empty array value', () => {
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '@/*': [],
+        },
+      },
+    });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(0);
+  });
+
+  it('uses only the first element from the paths value array', () => {
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        paths: {
+          '@/*': ['./src/*', './fallback/*'],
+        },
+      },
+    });
+
+    const aliases = extractTsconfigPathAliases(tsconfig);
+
+    expect(aliases).toHaveLength(1);
+    expect(aliases[0]).toEqual(['@', './src']);
   });
 });

@@ -91,6 +91,32 @@ export default config;`;
     expect(vitestConfig).toContain('branches: 80');
   });
 
+  it('copies tsconfig path aliases to resolve.alias in vitest config', async () => {
+    const filePath = join(tempDir, 'test.spec.ts');
+    const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
+    await writeFile(filePath, source);
+
+    const tsconfig = JSON.stringify({
+      compilerOptions: {
+        target: 'ES2022',
+        paths: {
+          '@/*': ['./src/*'],
+          '~utils/*': ['./src/utils/*'],
+        },
+      },
+    });
+    await writeFile(join(tempDir, 'tsconfig.json'), tsconfig);
+
+    runCli(tempDir);
+
+    const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
+    expect(vitestConfig).toContain("import { fileURLToPath } from 'node:url'");
+    expect(vitestConfig).toContain('resolve:');
+    expect(vitestConfig).toContain('alias:');
+    expect(vitestConfig).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+    expect(vitestConfig).toContain("'~utils': fileURLToPath(new URL('./src/utils', import.meta.url))");
+  });
+
   it('generates a basic vitest config when no jest config is present', async () => {
     const filePath = join(tempDir, 'test.spec.ts');
     const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
