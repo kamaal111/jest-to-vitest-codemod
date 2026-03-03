@@ -1,6 +1,12 @@
+import { parse as parseJsonc } from 'jsonc-parser';
+
 import { Lang, parseAsync } from '@ast-grep/napi';
 import type { SgNode } from '@ast-grep/napi';
 import type { TypesMap } from '@ast-grep/napi/types/staticTypes.js';
+
+function isPlainObject<T extends object>(value: unknown): value is T {
+  return typeof value === 'object' && value !== null;
+}
 
 // Simple 1-to-1 Jest → Vitest property mappings (setupFiles* and collectCoverageFrom need special handling)
 const JEST_TO_VITEST_TEST_PROPERTY_MAPPINGS: Array<[string, string]> = [
@@ -160,19 +166,19 @@ export interface VitestConfigMapping {
 export function extractTsconfigPathAliases(tsconfigContent: string): ReadonlyArray<readonly [string, string]> {
   let tsconfig: unknown;
   try {
-    tsconfig = JSON.parse(tsconfigContent);
+    tsconfig = parseJsonc(tsconfigContent);
   } catch {
     return [];
   }
 
-  if (typeof tsconfig !== 'object' || tsconfig === null) return [];
-  const compilerOptions = (tsconfig as Record<string, unknown>)['compilerOptions'];
-  if (typeof compilerOptions !== 'object' || compilerOptions === null) return [];
-  const paths = (compilerOptions as Record<string, unknown>)['paths'];
-  if (typeof paths !== 'object' || paths === null) return [];
+  if (!isPlainObject<Record<string, unknown>>(tsconfig)) return [];
+  const compilerOptions = tsconfig['compilerOptions'];
+  if (!isPlainObject<Record<string, unknown>>(compilerOptions)) return [];
+  const paths = compilerOptions['paths'];
+  if (!isPlainObject<Record<string, unknown>>(paths)) return [];
 
   const result: Array<readonly [string, string]> = [];
-  for (const [key, value] of Object.entries(paths as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(paths)) {
     if (!Array.isArray(value) || value.length === 0) continue;
     const alias = key.replace(/\/\*$/, '');
     const resolvedPath = String(value[0]).replace(/\/\*$/, '');
@@ -263,7 +269,9 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
     resolveLines.push('  resolve: {');
     resolveLines.push('    alias: {');
     for (const [alias, aliasPath] of pathAliases) {
-      resolveLines.push(`      '${alias}': fileURLToPath(new URL('${aliasPath}', import.meta.url)),`);
+      resolveLines.push(
+        `      ${JSON.stringify(alias)}: fileURLToPath(new URL(${JSON.stringify(aliasPath)}, import.meta.url)),`,
+      );
     }
     resolveLines.push('    },');
     resolveLines.push('  },');

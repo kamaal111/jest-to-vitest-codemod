@@ -96,16 +96,18 @@ export default config;`;
     const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
     await writeFile(filePath, source);
 
-    const tsconfig = JSON.stringify({
-      compilerOptions: {
-        target: 'ES2022',
-        paths: {
-          '@/*': ['./src/*'],
-          '~utils/*': ['./src/utils/*'],
-        },
-      },
-    });
-    await writeFile(join(tempDir, 'tsconfig.json'), tsconfig);
+    // Use JSONC-style tsconfig with comments and trailing commas (typical real-world format)
+    const jsoncTsconfig = `{
+  // TypeScript configuration
+  "compilerOptions": {
+    "target": "ES2022",
+    "paths": {
+      "@/*": ["./src/*"], // main alias
+      "~utils/*": ["./src/utils/*"],
+    },
+  },
+}`;
+    await writeFile(join(tempDir, 'tsconfig.json'), jsoncTsconfig);
 
     runCli(tempDir);
 
@@ -113,8 +115,8 @@ export default config;`;
     expect(vitestConfig).toContain("import { fileURLToPath } from 'node:url'");
     expect(vitestConfig).toContain('resolve:');
     expect(vitestConfig).toContain('alias:');
-    expect(vitestConfig).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
-    expect(vitestConfig).toContain("'~utils': fileURLToPath(new URL('./src/utils', import.meta.url))");
+    expect(vitestConfig).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(vitestConfig).toContain('"~utils": fileURLToPath(new URL("./src/utils", import.meta.url))');
   });
 
   it('generates a basic vitest config when no jest config is present', async () => {

@@ -279,7 +279,7 @@ describe('buildVitestConfigContent', () => {
     expect(content).toContain("import { fileURLToPath } from 'node:url'");
     expect(content).toContain('resolve:');
     expect(content).toContain('alias:');
-    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
   });
 
   it('generates multiple aliases in resolve.alias', () => {
@@ -293,8 +293,8 @@ describe('buildVitestConfigContent', () => {
       ],
     });
 
-    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
-    expect(content).toContain("'~components': fileURLToPath(new URL('./src/components', import.meta.url))");
+    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(content).toContain('"~components": fileURLToPath(new URL("./src/components", import.meta.url))');
   });
 
   it('does not add fileURLToPath import when no path aliases are provided', () => {
@@ -317,7 +317,7 @@ describe('buildVitestConfigContent', () => {
     });
 
     expect(content).toContain("environment: 'node'");
-    expect(content).toContain("'@': fileURLToPath(new URL('./src', import.meta.url))");
+    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
   });
 });
 
@@ -389,6 +389,25 @@ describe('extractTsconfigPathAliases', () => {
     const aliases = extractTsconfigPathAliases('not valid json {');
 
     expect(aliases).toHaveLength(0);
+  });
+
+  it('parses tsconfig files with comments and trailing commas (JSONC)', () => {
+    const jsoncTsconfig = `{
+  // TypeScript configuration with comments
+  "compilerOptions": {
+    "target": "ES2022", // compile target
+    "paths": {
+      "@/*": ["./src/*"], // main alias
+      "~utils/*": ["./src/utils/*"],
+    },
+  },
+}`;
+
+    const aliases = extractTsconfigPathAliases(jsoncTsconfig);
+
+    expect(aliases).toHaveLength(2);
+    expect(aliases.find(([key]) => key === '@')?.[1]).toBe('./src');
+    expect(aliases.find(([key]) => key === '~utils')?.[1]).toBe('./src/utils');
   });
 
   it('skips path entries with an empty array value', () => {
