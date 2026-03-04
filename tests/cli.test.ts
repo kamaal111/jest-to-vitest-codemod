@@ -1,10 +1,11 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const CLI_PATH = join(process.cwd(), 'dist/cli.js');
+const EXAMPLE_DIR = join(process.cwd(), 'example');
 
 function runCli(dir: string) {
   const result = spawnSync('node', [CLI_PATH, dir], {
@@ -91,6 +92,34 @@ export default config;`;
     expect(vitestConfig).toContain('branches: 80');
   });
 
+  it('copies tsconfig path aliases to resolve.alias in vitest config', async () => {
+    const filePath = join(tempDir, 'test.spec.ts');
+    const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
+    await writeFile(filePath, source);
+
+    // Use JSONC-style tsconfig with comments and trailing commas (typical real-world format)
+    const jsoncTsconfig = `{
+  // TypeScript configuration
+  "compilerOptions": {
+    "target": "ES2022",
+    "paths": {
+      "@/*": ["./src/*"], // main alias
+      "~utils/*": ["./src/utils/*"],
+    },
+  },
+}`;
+    await writeFile(join(tempDir, 'tsconfig.json'), jsoncTsconfig);
+
+    runCli(tempDir);
+
+    const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
+    expect(vitestConfig).toContain("import { fileURLToPath } from 'node:url'");
+    expect(vitestConfig).toContain('resolve:');
+    expect(vitestConfig).toContain('alias:');
+    expect(vitestConfig).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(vitestConfig).toContain('"~utils": fileURLToPath(new URL("./src/utils", import.meta.url))');
+  });
+
   it('generates a basic vitest config when no jest config is present', async () => {
     const filePath = join(tempDir, 'test.spec.ts');
     const source = "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });";
@@ -102,5 +131,17 @@ export default config;`;
     expect(vitestConfig).toContain("from 'vitest/config'");
     expect(vitestConfig).toContain('defineConfig');
     expect(vitestConfig).toContain('test:');
+  });
+
+  it('copies tsconfig path aliases from example directory into generated vitest config', async () => {
+    await cp(EXAMPLE_DIR, tempDir, { recursive: true });
+
+    runCli(tempDir);
+
+    const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
+    expect(vitestConfig).toContain("import { fileURLToPath } from 'node:url'");
+    expect(vitestConfig).toContain('resolve:');
+    expect(vitestConfig).toContain('alias:');
+    expect(vitestConfig).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
   });
 });

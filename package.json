@@ -43,7 +43,8 @@
   "dependencies": {
     "@ast-grep/napi": "^0.41.0",
     "@kamaalio/codemod-kit": "^0.0.42",
-    "@kamaalio/kamaal": "^0.8.0"
+    "@kamaalio/kamaal": "^0.8.0",
+    "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

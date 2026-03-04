@@ -15,7 +15,11 @@ import jestHooksToVitest from './rules/jest-hooks-to-vitest.js';
 import jestMockTypeToVitest from './rules/jest-mock-type-to-vitest.js';
 import addVitestImports from './rules/add-vitest-imports.js';
 import removeJestImport from './rules/remove-jest-import.js';
-import { buildVitestConfigContent, extractVitestConfigFromJestConfig } from './utils/jest-config-to-vitest-config.js';
+import {
+  buildVitestConfigContent,
+  extractTsconfigPathAliases,
+  extractVitestConfigFromJestConfig,
+} from './utils/jest-config-to-vitest-config.js';
 
 export const JEST_TO_VITEST_LANGUAGE = Lang.TypeScript;
 
@@ -76,6 +80,14 @@ async function jestToVitestPostTransform(
   const existingVitestConfig = content.find(item => item.isFile() && item.name.startsWith('vitest.config.'));
   if (existingVitestConfig != null) return;
 
+  let pathAliases: ReadonlyArray<readonly [string, string]> = [];
+  try {
+    const tsconfigContent = await fs.readFile(path.join(root, 'tsconfig.json'), { encoding: 'utf-8' });
+    pathAliases = extractTsconfigPathAliases(tsconfigContent);
+  } catch {
+    // No tsconfig.json or unreadable — skip path aliases
+  }
+
   const jestConfigFile = content.find(item => item.isFile() && item.name.startsWith('jest.config.'));
   let vitestConfigContent: string;
   if (jestConfigFile != null) {
@@ -84,12 +96,13 @@ async function jestToVitestPostTransform(
         encoding: 'utf-8',
       });
       const mapping = await extractVitestConfigFromJestConfig(jestConfigContent);
-      vitestConfigContent = buildVitestConfigContent(mapping);
+      vitestConfigContent = buildVitestConfigContent({ ...mapping, pathAliases });
     } catch {
       vitestConfigContent = buildVitestConfigContent({
         testProperties: [],
         coverageProperties: [],
         coverageThresholds: null,
+        pathAliases,
       });
     }
   } else {
@@ -97,6 +110,7 @@ async function jestToVitestPostTransform(
       testProperties: [],
       coverageProperties: [],
       coverageThresholds: null,
+      pathAliases,
     });
   }
 

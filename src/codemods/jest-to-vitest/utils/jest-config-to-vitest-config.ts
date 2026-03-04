@@ -1,6 +1,12 @@
+import { parse as parseJsonc } from 'jsonc-parser';
+
 import { Lang, parseAsync } from '@ast-grep/napi';
 import type { SgNode } from '@ast-grep/napi';
 import type { TypesMap } from '@ast-grep/napi/types/staticTypes.js';
+
+function isPlainObject<T extends object>(value: unknown): value is T {
+  return typeof value === 'object' && value !== null;
+}
 
 // Simple 1-to-1 Jest → Vitest property mappings (setupFiles* and collectCoverageFrom need special handling)
 const JEST_TO_VITEST_TEST_PROPERTY_MAPPINGS: Array<[string, string]> = [
@@ -154,6 +160,31 @@ export interface VitestConfigMapping {
   testProperties: ReadonlyArray<readonly [string, string]>;
   coverageProperties: ReadonlyArray<readonly [string, string]>;
   coverageThresholds: string | null;
+  pathAliases?: ReadonlyArray<readonly [string, string]>;
+}
+
+export function extractTsconfigPathAliases(tsconfigContent: string): ReadonlyArray<readonly [string, string]> {
+  let tsconfig: unknown;
+  try {
+    tsconfig = parseJsonc(tsconfigContent);
+  } catch {
+    return [];
+  }
+
+  if (!isPlainObject<Record<string, unknown>>(tsconfig)) return [];
+  const compilerOptions = tsconfig['compilerOptions'];
+  if (!isPlainObject<Record<string, unknown>>(compilerOptions)) return [];
+  const paths = compilerOptions['paths'];
+  if (!isPlainObject<Record<string, unknown>>(paths)) return [];
+
+  const result: Array<readonly [string, string]> = [];
+  for (const [key, value] of Object.entries(paths)) {
+    if (!Array.isArray(value) || value.length === 0) continue;
+    const alias = key.replace(/\/\*$/, '');
+    const resolvedPath = String(value[0]).replace(/\/\*$/, '');
+    result.push([alias, resolvedPath] as const);
+  }
+  return result;
 }
 
 export async function extractVitestConfigFromJestConfig(jestConfigContent: string): Promise<VitestConfigMapping> {
@@ -194,13 +225,20 @@ export async function extractVitestConfigFromJestConfig(jestConfigContent: strin
 
 export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
   const { testProperties, coverageProperties, coverageThresholds } = mapping;
+  const pathAliases = mapping.pathAliases ?? [];
 
   const hasCoverageProps = coverageProperties.length > 0 || coverageThresholds != null;
+  const hasPathAliases = pathAliases.length > 0;
   const hasAnyProps = testProperties.length > 0 || hasCoverageProps;
 
-  if (!hasAnyProps) {
+  const importLines = ["import { defineConfig } from 'vitest/config';"];
+  if (hasPathAliases) {
+    importLines.push("import { fileURLToPath } from 'node:url';");
+  }
+
+  if (!hasAnyProps && !hasPathAliases) {
     return [
-      "import { defineConfig } from 'vitest/config';",
+      ...importLines,
       '',
       'export default defineConfig({',
       '  // Configure Vitest (https://vitest.dev/config/)',
@@ -226,14 +264,28 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
     testLines.push('    },');
   }
 
+  const resolveLines: string[] = [];
+  if (hasPathAliases) {
+    resolveLines.push('  resolve: {');
+    resolveLines.push('    alias: {');
+    for (const [alias, aliasPath] of pathAliases) {
+      resolveLines.push(
+        `      ${JSON.stringify(alias)}: fileURLToPath(new URL(${JSON.stringify(aliasPath)}, import.meta.url)),`,
+      );
+    }
+    resolveLines.push('    },');
+    resolveLines.push('  },');
+  }
+
+  const testBlock = testLines.length > 0 ? ['  test: {', ...testLines, '  },'] : ['  test: {},'];
+
   return [
-    "import { defineConfig } from 'vitest/config';",
+    ...importLines,
     '',
     'export default defineConfig({',
     '  // Configure Vitest (https://vitest.dev/config/)',
-    '  test: {',
-    ...testLines,
-    '  },',
+    ...resolveLines,
+    ...testBlock,
     '});',
   ].join('\n');
 }
