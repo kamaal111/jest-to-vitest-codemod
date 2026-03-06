@@ -69,11 +69,6 @@ xdescribe('transformation coverage for problematic runtime cases', () => {
     jest.setTimeout(50_000);
   });
 
-  it('jest.genMockFromModule transformation', () => {
-    const mock = jest.genMockFromModule('../src/calculator');
-    expect(mock).toBeDefined();
-  });
-
   it('jest.createMockFromModule transformation', () => {
     const mock = jest.createMockFromModule('../src/calculator');
     expect(mock).toBeDefined();
