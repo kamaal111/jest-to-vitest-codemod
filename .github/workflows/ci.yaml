@@ -13,46 +13,38 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - name: Git - Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.13.1
 
-      - name: Use Node 22.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version-file: .node-version
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - name: Run quality checks
-        run: pnpm quality
+      - run: pnpm quality
 
   test:
     name: Test
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - name: Git - Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.13.1
 
-      - name: Use Node 22.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version-file: .node-version
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - name: Run tests
-        run: pnpm test:cov
+      - run: pnpm test:cov
 
   example:
     name: Example App Transformation
@@ -61,23 +53,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Git - Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10.13.1
 
-      - name: Use Node 22.x
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version-file: .node-version
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install
+      - run: pnpm install
 
       - name: Install example app dependencies
         working-directory: example

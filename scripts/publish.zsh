@@ -1,4 +1,4 @@
 pnpm install
 pnpm build:clean
-pnpm exec tsx scripts/publish-package-json.ts "${VERSION:-null}"
-pnpm publish --access public --no-git-checks
+npm version ${VERSION:-null} --no-git-tag-version
+pnpm publish --no-git-checks
