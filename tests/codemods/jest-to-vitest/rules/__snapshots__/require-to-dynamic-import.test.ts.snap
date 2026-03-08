@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`requireToDynamicImport > does not add duplicate async keyword for already async arrow function 1`] = `"const fn = async () => { const mod = (await import('./path')); };"`;
+
+exports[`requireToDynamicImport > transforms require inside a function declaration to async function 1`] = `"async function fn() { const mod = (await import('./path')); }"`;
+
+exports[`requireToDynamicImport > transforms require inside a function expression to async function expression 1`] = `"const fn = async function() { const mod = (await import('./path')); };"`;
+
+exports[`requireToDynamicImport > transforms require inside an arrow function to async arrow function 1`] = `"const fn = async () => { const mod = (await import('./path')); };"`;
+
+exports[`requireToDynamicImport > transforms require with double quotes at top-level to dynamic import 1`] = `"const mod = (await import("./path"));"`;
+
+exports[`requireToDynamicImport > transforms require with single quotes at top-level to dynamic import 1`] = `"const mod = (await import('./path'));"`;

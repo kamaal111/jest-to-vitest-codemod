@@ -91,8 +91,7 @@ describe('extractVitestConfigFromJestConfig', () => {
   it('skips empty setupFilesAfterEnv', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
-    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
-    expect(setupFiles).toBeUndefined();
+    expect(mapping.setupFiles).toBeNull();
   });
 
   it('merges non-empty setupFiles and setupFilesAfterEnv into a single setupFiles array', async () => {
@@ -103,10 +102,8 @@ describe('extractVitestConfigFromJestConfig', () => {
 export default config;`;
     const mapping = await extractVitestConfigFromJestConfig(config);
 
-    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
-    expect(setupFiles).toBeDefined();
-    expect(setupFiles?.[1]).toContain("...['./setup1.ts']");
-    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+    expect(mapping.setupFiles).toContain("'./setup1.ts'");
+    expect(mapping.setupFiles).toContain("'./setupAfterEnv.ts'");
   });
 
   it('only merges setupFilesAfterEnv when setupFiles is absent', async () => {
@@ -116,9 +113,7 @@ export default config;`;
 export default config;`;
     const mapping = await extractVitestConfigFromJestConfig(config);
 
-    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
-    expect(setupFiles).toBeDefined();
-    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+    expect(mapping.setupFiles).toContain("'./setupAfterEnv.ts'");
   });
 
   it('treats empty array with spaces as an empty collection', async () => {
@@ -129,8 +124,7 @@ export default config;`;
 export default config;`;
     const mapping = await extractVitestConfigFromJestConfig(config);
 
-    const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
-    expect(setupFiles).toBeUndefined();
+    expect(mapping.setupFiles).toBeNull();
 
     const environment = mapping.testProperties.find(([key]) => key === 'environment');
     expect(environment).toBeDefined();
@@ -195,14 +189,67 @@ export default config;`;
     expect(mapping.coverageThresholds).toContain('statements: 80');
   });
 
-  it('ignores unmapped jest properties like preset, roots, globals, moduleNameMapper', async () => {
+  it('ignores unmapped jest properties like preset and roots', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
     const keys = mapping.testProperties.map(([key]) => key);
     expect(keys).not.toContain('preset');
     expect(keys).not.toContain('roots');
-    expect(keys).not.toContain('globals');
-    expect(keys).not.toContain('moduleNameMapper');
+  });
+
+  it('extracts globals as define entries', async () => {
+    const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
+
+    expect(mapping.globals).toBeDefined();
+    expect(mapping.globals!.length).toBeGreaterThan(0);
+  });
+
+  it('extracts moduleNameMapper aliases', async () => {
+    const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
+
+    expect(mapping.moduleNameMapperAliases).toBeDefined();
+    expect(mapping.moduleNameMapperAliases!.length).toBeGreaterThan(0);
+    const aliasKeys = mapping.moduleNameMapperAliases!.map(([key]) => key);
+    expect(aliasKeys).toContain('@/(.*)');
+  });
+
+  it('extracts moduleNameMapper from Object.assign pattern', async () => {
+    const config = `module.exports = Object.assign(baseConfig, {
+  moduleNameMapper: {
+    '^dnd-core$': 'dnd-core/dist/cjs',
+    'box-locale-data': '<rootDir>/node_modules/@box/cldr-data/locale-data/en-US',
+  },
+});`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.moduleNameMapperAliases).toBeDefined();
+    const aliases = mapping.moduleNameMapperAliases!;
+    expect(aliases.find(([k]) => k === 'dnd-core')?.[1]).toBe('dnd-core/dist/cjs');
+    expect(aliases.find(([k]) => k === 'box-locale-data')?.[1]).toBe('./node_modules/@box/cldr-data/locale-data/en-US');
+  });
+
+  it('extracts snapshot serializers as literal entries', async () => {
+    const config = `const config = {
+  snapshotSerializers: ['enzyme-to-json/serializer', './test-utils/custom-serializer.js'],
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.snapshotSerializers).toEqual(["'enzyme-to-json/serializer'", "'./test-utils/custom-serializer.js'"]);
+  });
+
+  it('detects CSS patterns in moduleNameMapper and sets hasCssMock', async () => {
+    const config = `const config = {
+  moduleNameMapper: {
+    '\\\\.(css|scss)$': '<rootDir>/test-utils/style-mock.js',
+  },
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.hasCssMock).toBe(true);
+    const aliasKeys = (mapping.moduleNameMapperAliases ?? []).map(([key]) => key);
+    expect(aliasKeys).not.toContain('\\.(css|scss)$');
   });
 
   it('does not pick up nested properties as top-level config', async () => {
@@ -226,6 +273,31 @@ export default config;`;
     expect(mapping.testProperties).toHaveLength(0);
     expect(mapping.coverageProperties).toHaveLength(0);
     expect(mapping.coverageThresholds).toBeNull();
+  });
+
+  it('extracts custom export conditions, css mocks, transform ignores, and module directories', async () => {
+    const config = `export default {
+  testEnvironment: './config/custom-jsdom-env.js',
+  testEnvironmentOptions: {
+    customExportConditions: ['worker'],
+  },
+  moduleDirectories: ['src', 'node_modules'],
+  transformIgnorePatterns: ['/node_modules/(?!(foo-esm-package))/'],
+  moduleNameMapper: {
+    '\\\\.(css|scss)$': '<rootDir>/tests/style-mock.js',
+    '\\\\.(png|svg)$': '<rootDir>/tests/file-mock.js',
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+};`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.testProperties.find(([key]) => key === 'environment')?.[1]).toBe("'jsdom'");
+    expect(mapping.rawTestEnvironment).toBe("'./config/custom-jsdom-env.js'");
+    expect(mapping.customExportConditions).toBe("['worker']");
+    expect(mapping.hasTransformIgnorePatterns).toBe(true);
+    expect(mapping.hasCssMock).toBe(true);
+    expect(mapping.moduleDirectories).toEqual(['src']);
+    expect(mapping.moduleNameMapperAliases).toEqual([['@/(.*)', './src/$1']]);
   });
 });
 
@@ -268,7 +340,7 @@ describe('buildVitestConfigContent', () => {
     expect(content).toContain('thresholds: { branches: 80 }');
   });
 
-  it('generates resolve.alias section with fileURLToPath import when path aliases are provided', () => {
+  it('generates plugins section with tsconfigPaths when path aliases are provided', () => {
     const content = buildVitestConfigContent({
       testProperties: [],
       coverageProperties: [],
@@ -276,36 +348,84 @@ describe('buildVitestConfigContent', () => {
       pathAliases: [['@', './src']],
     });
 
-    expect(content).toContain("import { fileURLToPath } from 'node:url'");
-    expect(content).toContain('resolve:');
-    expect(content).toContain('alias:');
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(content).toContain("import tsconfigPaths from 'vite-tsconfig-paths'");
+    expect(content).toContain('plugins: [tsconfigPaths()]');
   });
 
-  it('generates multiple aliases in resolve.alias', () => {
-    const content = buildVitestConfigContent({
-      testProperties: [],
-      coverageProperties: [],
-      coverageThresholds: null,
-      pathAliases: [
-        ['@', './src'],
-        ['~components', './src/components'],
-      ],
-    });
-
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
-    expect(content).toContain('"~components": fileURLToPath(new URL("./src/components", import.meta.url))');
-  });
-
-  it('does not add fileURLToPath import when no path aliases are provided', () => {
+  it('does not add tsconfigPaths import when no path aliases are provided', () => {
     const content = buildVitestConfigContent({
       testProperties: [['environment', "'node'"]],
       coverageProperties: [],
       coverageThresholds: null,
     });
 
-    expect(content).not.toContain('fileURLToPath');
-    expect(content).not.toContain('resolve:');
+    expect(content).not.toContain('tsconfigPaths');
+  });
+
+  it('generates define block from globals', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      globals: [
+        ['__APPNAME__', "'enduserapp'"],
+        ['__VERSION__', "'1.0.0'"],
+      ],
+    });
+
+    expect(content).toContain('define:');
+    expect(content).toContain("__APPNAME__: JSON.stringify('enduserapp')");
+    expect(content).toContain("__VERSION__: JSON.stringify('1.0.0')");
+  });
+
+  it('generates resolve.alias from moduleNameMapperAliases', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      moduleNameMapperAliases: [
+        ['dnd-core', 'dnd-core/dist/cjs'],
+        ['box-locale-data', './node_modules/@box/cldr-data/locale-data/en-US'],
+      ],
+    });
+
+    expect(content).toContain('resolve:');
+    expect(content).toContain('alias:');
+    expect(content).toContain('"dnd-core": "dnd-core/dist/cjs"');
+    expect(content).toContain('path.resolve(__dirname, "./node_modules/@box/cldr-data/locale-data/en-US")');
+  });
+
+  it('adds css: false when hasCssMock is true', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      hasCssMock: true,
+    });
+
+    expect(content).toContain('css: false');
+  });
+
+  it('does not emit snapshot serializers directly in the Vitest config', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      snapshotSerializers: ["'enzyme-to-json/serializer'"],
+    });
+
+    expect(content).not.toContain('snapshotSerializers:');
+  });
+
+  it('emits setupFiles when generated setup modules are provided', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      additionalSetupFiles: ['./vitest.config.setup.ts'],
+    });
+
+    expect(content).toContain("setupFiles: ['./vitest.config.setup.ts']");
   });
 
   it('generates config with both test properties and path aliases', () => {
@@ -317,7 +437,34 @@ describe('buildVitestConfigContent', () => {
     });
 
     expect(content).toContain("environment: 'node'");
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(content).toContain('plugins: [tsconfigPaths()]');
+  });
+
+  it('generates advanced compatibility plugins when the mapping requires them', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [['environment', "'jsdom'"]],
+      coverageProperties: [],
+      coverageThresholds: null,
+      hasCssMock: true,
+      hasTransformIgnorePatterns: true,
+      hasReact: true,
+      babelRewirePlugin: 'rewire',
+      webpackRemotes: ['@scope/app-remote'],
+      customExportConditions: "['worker']",
+      additionalSetupFiles: ['./vitest.config.setup.ts'],
+    });
+
+    expect(content).toContain('function jsxInJsPlugin(): Plugin');
+    expect(content).toContain('function babelRewirePlugin(): Plugin');
+    expect(content).toContain('function webpackRemotesPlugin(): Plugin');
+    expect(content).toContain('function cssMockPlugin(): Plugin');
+    expect(content).toContain("conditions: ['import', 'module', 'browser', 'default']");
+    expect(content).toContain("setupFiles: ['./vitest.config.setup.ts']");
+    expect(content).toContain('css: false');
+    expect(content).toContain('inline: true');
+    expect(content).toContain(
+      'plugins: [jsxInJsPlugin(), babelRewirePlugin(), webpackRemotesPlugin(), cssMockPlugin()]',
+    );
   });
 });
 

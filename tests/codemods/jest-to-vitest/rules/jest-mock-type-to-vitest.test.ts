@@ -97,3 +97,29 @@ describe('jest.MockedClass -> MockedClass', () => {
     expect(updatedSource).toContain('MockedClass<typeof SomeClass>');
   });
 });
+
+describe('nested jest.Mock usages', () => {
+  it('replaces jest.Mock inside object types used in generics', async () => {
+    const source = `const mockHook = requireMock<(...params: Array<unknown>) => { useHook: jest.Mock }>('../hooks')`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('jest.Mock');
+    expect(updatedSource).toContain(`useHook: Mock`);
+  });
+
+  it('replaces jest.Mock in type assertions', async () => {
+    const source = `const mockHook = requireMock('../hooks').useHook as jest.Mock;`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return jestMockTypeToVitest(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('jest.Mock');
+    expect(updatedSource).toContain(`as Mock`);
+  });
+});

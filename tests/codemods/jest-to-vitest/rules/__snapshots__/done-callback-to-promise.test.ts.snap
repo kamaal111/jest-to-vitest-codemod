@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`doneCallbackToPromise > it() > transforms done callback to promise 1`] = `
+"it('loads data', () => new Promise<void>((resolve, reject) => { const done = (err?: unknown) => err ? reject(err) : resolve();
+  fetchData((data) => {
+    expect(data).toBe('peanut butter');
+    done();
+  });
+}));"
+`;
+
+exports[`doneCallbackToPromise > it() > transforms done callback to promise with timeout 1`] = `
+"it('loads data with timeout', () => new Promise<void>((resolve, reject) => { const done = (err?: unknown) => err ? reject(err) : resolve();
+  fetchData((data) => {
+    expect(data).toBe('peanut butter');
+    done();
+  });
+}), 5000);"
+`;
+
+exports[`doneCallbackToPromise > test() > transforms done callback to promise 1`] = `
+"test('loads data', () => new Promise<void>((resolve, reject) => { const done = (err?: unknown) => err ? reject(err) : resolve();
+  fetchData((data) => {
+    expect(data).toBe('peanut butter');
+    done();
+  });
+}));"
+`;
+
+exports[`doneCallbackToPromise > test() > transforms done callback to promise with timeout 1`] = `
+"test('loads data with timeout', () => new Promise<void>((resolve, reject) => { const done = (err?: unknown) => err ? reject(err) : resolve();
+  fetchData((data) => {
+    expect(data).toBe('peanut butter');
+    done();
+  });
+}), 1000);"
+`;

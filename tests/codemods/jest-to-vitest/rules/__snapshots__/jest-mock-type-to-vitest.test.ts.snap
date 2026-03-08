@@ -17,3 +17,7 @@ exports[`jestMockTypeToVitest > removes jest from jest.Mock and ensure generic p
 exports[`jestMockTypeToVitest > removes jest from jest.Mock without generic param ['jest'] 1`] = `"let fn: Mock"`;
 
 exports[`jestMockTypeToVitest > removes jest from jest.Mock without generic param ['vi'] 1`] = `"let fn: Mock"`;
+
+exports[`nested jest.Mock usages > replaces jest.Mock in type assertions 1`] = `"const mockHook = requireMock('../hooks').useHook as Mock;"`;
+
+exports[`nested jest.Mock usages > replaces jest.Mock inside object types used in generics 1`] = `"const mockHook = requireMock<(...params: Array<unknown>) => { useHook: Mock }>('../hooks')"`;

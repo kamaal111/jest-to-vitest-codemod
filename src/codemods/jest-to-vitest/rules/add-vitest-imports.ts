@@ -19,7 +19,7 @@ const IMPORT_SPECIFIERS_SEARCH_RULE: Rule<TypesMap> = {
   any: VITEST_IMPORT_NAMES.map<Rule<TypesMap>>(importName => ({
     pattern: importName,
     kind: 'identifier',
-  })).concat(VITEST_TYPE_IMPORT_NAMES.map(importName => ({ kind: 'type_identifier', regex: importName }))),
+  })).concat(VITEST_TYPE_IMPORT_NAMES.map(importName => ({ kind: 'type_identifier', regex: `^${importName}$` }))),
 };
 
 async function addVitestImports(modifications: Modifications): Promise<Modifications> {
