@@ -24,7 +24,7 @@ exports[`jest.mock -> vi.mock > replaces jest mock with vi with return 1`] = `
 exports[`jest.mock -> vi.mock > replaces jest mock with vi with specific specifiers 1`] = `
 "import { something } from './some-path';
 
-    vi.mock('./some-path', () => ({ something: vi.fn() }))"
+    vi.mock('./some-path', () => { const __mock = ({ something: vi.fn() }); return globalThis.__mockModule({ ...__mock, default: __mock }); })"
 `;
 
 exports[`jest.mock -> vi.mock > replaces jest mock with vi without module override 1`] = `"vi.mock('./some-path')"`;
@@ -32,10 +32,10 @@ exports[`jest.mock -> vi.mock > replaces jest mock with vi without module overri
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual 1`] = `"(await vi.importActual('lodash/cloneDeep'))"`;
 
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual in mock 1`] = `
-"vi.mock('something', async () => ({
+"vi.mock('something', () => { const __mock = ({
       ...(await vi.importActual('something')),
       mocked: vi.fn()
-    }))"
+    }); return globalThis.__mockModule({ ...__mock, default: __mock }); })"
 `;
 
 exports[`jest.resetAllMocks -> vi.resetAllMocks > replaces jest resetAllMocks with vi 1`] = `"vi.resetAllMocks()"`;

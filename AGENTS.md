@@ -13,3 +13,12 @@ Use `pnpm` with Node `>=22`.
 - `pnpm format` / `pnpm format:check`: apply or verify Prettier formatting.
 - `pnpm type-check`: run `tsc --noEmit`.
 - `pnpm quality`: run the main pre-merge checks.
+
+## Completion Requirements
+
+- Before completing work, the agent must run `pnpm run ready`.
+- If `pnpm run ready` reports any issues, the agent must resolve all of them before finishing.
+
+## Code Style
+
+- Do not use `as any`; prefer explicit types, narrowing, or typed helpers/globals.
