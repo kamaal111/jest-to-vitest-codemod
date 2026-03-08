@@ -36,6 +36,7 @@
     "format:check": "prettier . --check",
     "lint": "eslint --max-warnings 0",
     "prepare": "husky",
+    "ready": "pnpm quality && pnpm test:cov",
     "test": "vitest run",
     "test:cov": "pnpm install && vitest run --coverage",
     "test:u": "vitest run --update",

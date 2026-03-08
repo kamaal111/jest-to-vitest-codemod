@@ -105,8 +105,8 @@ export default config;`;
 
     const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
     expect(setupFiles).toBeDefined();
-    expect(setupFiles?.[1]).toContain("...['./setup1.ts']");
-    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+    expect(setupFiles?.[1]).toContain("'./setup1.ts'");
+    expect(setupFiles?.[1]).toContain("'./setupAfterEnv.ts'");
   });
 
   it('only merges setupFilesAfterEnv when setupFiles is absent', async () => {
@@ -118,7 +118,7 @@ export default config;`;
 
     const setupFiles = mapping.testProperties.find(([key]) => key === 'setupFiles');
     expect(setupFiles).toBeDefined();
-    expect(setupFiles?.[1]).toContain("...['./setupAfterEnv.ts']");
+    expect(setupFiles?.[1]).toContain("'./setupAfterEnv.ts'");
   });
 
   it('treats empty array with spaces as an empty collection', async () => {
@@ -195,14 +195,57 @@ export default config;`;
     expect(mapping.coverageThresholds).toContain('statements: 80');
   });
 
-  it('ignores unmapped jest properties like preset, roots, globals, moduleNameMapper', async () => {
+  it('ignores unmapped jest properties like preset and roots', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
     const keys = mapping.testProperties.map(([key]) => key);
     expect(keys).not.toContain('preset');
     expect(keys).not.toContain('roots');
-    expect(keys).not.toContain('globals');
-    expect(keys).not.toContain('moduleNameMapper');
+  });
+
+  it('extracts globals as define entries', async () => {
+    const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
+
+    expect(mapping.globals).toBeDefined();
+    expect(mapping.globals!.length).toBeGreaterThan(0);
+  });
+
+  it('extracts moduleNameMapper aliases', async () => {
+    const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
+
+    expect(mapping.moduleNameMapperAliases).toBeDefined();
+    expect(mapping.moduleNameMapperAliases!.length).toBeGreaterThan(0);
+    const aliasKeys = mapping.moduleNameMapperAliases!.map(([key]) => key);
+    expect(aliasKeys).toContain('@/(.*)');
+  });
+
+  it('extracts moduleNameMapper from Object.assign pattern', async () => {
+    const config = `module.exports = Object.assign(baseConfig, {
+  moduleNameMapper: {
+    '^dnd-core$': 'dnd-core/dist/cjs',
+    'box-locale-data': '<rootDir>/node_modules/@box/cldr-data/locale-data/en-US',
+  },
+});`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.moduleNameMapperAliases).toBeDefined();
+    const aliases = mapping.moduleNameMapperAliases!;
+    expect(aliases.find(([k]) => k === 'dnd-core')?.[1]).toBe('dnd-core/dist/cjs');
+    expect(aliases.find(([k]) => k === 'box-locale-data')?.[1]).toBe('./node_modules/@box/cldr-data/locale-data/en-US');
+  });
+
+  it('detects CSS patterns in moduleNameMapper and sets hasCssMock', async () => {
+    const config = `const config = {
+  moduleNameMapper: {
+    '\\\\.(css|scss)$': '<rootDir>/test-utils/style-mock.js',
+  },
+};
+export default config;`;
+    const mapping = await extractVitestConfigFromJestConfig(config);
+
+    expect(mapping.hasCssMock).toBe(true);
+    const aliasKeys = (mapping.moduleNameMapperAliases ?? []).map(([key]) => key);
+    expect(aliasKeys).not.toContain('\\.(css|scss)$');
   });
 
   it('does not pick up nested properties as top-level config', async () => {
@@ -268,7 +311,7 @@ describe('buildVitestConfigContent', () => {
     expect(content).toContain('thresholds: { branches: 80 }');
   });
 
-  it('generates resolve.alias section with fileURLToPath import when path aliases are provided', () => {
+  it('generates plugins section with tsconfigPaths when path aliases are provided', () => {
     const content = buildVitestConfigContent({
       testProperties: [],
       coverageProperties: [],
@@ -276,36 +319,62 @@ describe('buildVitestConfigContent', () => {
       pathAliases: [['@', './src']],
     });
 
-    expect(content).toContain("import { fileURLToPath } from 'node:url'");
-    expect(content).toContain('resolve:');
-    expect(content).toContain('alias:');
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(content).toContain("import tsconfigPaths from 'vite-tsconfig-paths'");
+    expect(content).toContain('plugins: [tsconfigPaths()]');
   });
 
-  it('generates multiple aliases in resolve.alias', () => {
-    const content = buildVitestConfigContent({
-      testProperties: [],
-      coverageProperties: [],
-      coverageThresholds: null,
-      pathAliases: [
-        ['@', './src'],
-        ['~components', './src/components'],
-      ],
-    });
-
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
-    expect(content).toContain('"~components": fileURLToPath(new URL("./src/components", import.meta.url))');
-  });
-
-  it('does not add fileURLToPath import when no path aliases are provided', () => {
+  it('does not add tsconfigPaths import when no path aliases are provided', () => {
     const content = buildVitestConfigContent({
       testProperties: [['environment', "'node'"]],
       coverageProperties: [],
       coverageThresholds: null,
     });
 
-    expect(content).not.toContain('fileURLToPath');
-    expect(content).not.toContain('resolve:');
+    expect(content).not.toContain('tsconfigPaths');
+  });
+
+  it('generates define block from globals', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      globals: [
+        ['__APPNAME__', "'enduserapp'"],
+        ['__VERSION__', "'1.0.0'"],
+      ],
+    });
+
+    expect(content).toContain('define:');
+    expect(content).toContain("__APPNAME__: JSON.stringify('enduserapp')");
+    expect(content).toContain("__VERSION__: JSON.stringify('1.0.0')");
+  });
+
+  it('generates resolve.alias from moduleNameMapperAliases', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      moduleNameMapperAliases: [
+        ['dnd-core', 'dnd-core/dist/cjs'],
+        ['box-locale-data', './node_modules/@box/cldr-data/locale-data/en-US'],
+      ],
+    });
+
+    expect(content).toContain('resolve:');
+    expect(content).toContain('alias:');
+    expect(content).toContain('"dnd-core": "dnd-core/dist/cjs"');
+    expect(content).toContain('path.resolve(__dirname, "./node_modules/@box/cldr-data/locale-data/en-US")');
+  });
+
+  it('adds css: false when hasCssMock is true', () => {
+    const content = buildVitestConfigContent({
+      testProperties: [],
+      coverageProperties: [],
+      coverageThresholds: null,
+      hasCssMock: true,
+    });
+
+    expect(content).toContain('css: false');
   });
 
   it('generates config with both test properties and path aliases', () => {
@@ -317,7 +386,7 @@ describe('buildVitestConfigContent', () => {
     });
 
     expect(content).toContain("environment: 'node'");
-    expect(content).toContain('"@": fileURLToPath(new URL("./src", import.meta.url))');
+    expect(content).toContain('plugins: [tsconfigPaths()]');
   });
 });
 
