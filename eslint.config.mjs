@@ -13,11 +13,12 @@ export default [
       '@typescript-eslint/no-unused-vars': 'error',
     },
   },
-  { ignores: ['dist/', 'coverage'] },
+  { ignores: ['.tmp-example-*', 'dist/', 'coverage'] },
   {
     files: ['example/**'],
     rules: {
       'no-constant-condition': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   eslintConfigPrettier,

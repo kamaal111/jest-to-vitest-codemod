@@ -175,6 +175,7 @@ dist
 .svelte-kit
 
 # Example app
+.tmp-example-*/
 example/node_modules/
 example/package-lock.json
 

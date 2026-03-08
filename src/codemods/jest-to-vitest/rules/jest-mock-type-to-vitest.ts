@@ -25,25 +25,25 @@ const EDIT_CONFIGS: Array<FindAndReplaceConfig> = [
       const parent = node.parent();
       asserts.invariant(parent != null, 'Mock identifier should have a parent');
 
-      const defaultReplacement = 'Mock';
-      const hasFunctionGenericParam = parent.find({ rule: { kind: 'function_type' } }) != null;
-      if (hasFunctionGenericParam) return defaultReplacement;
+      if (parent.kind() !== 'generic_type') {
+        return 'Mock';
+      }
 
       const parentText = parent.text();
       const genericParamStart = parentText.indexOf('<');
-      const doesNotHaveAGenericParam = genericParamStart === -1;
-      if (doesNotHaveAGenericParam) return defaultReplacement;
-
-      let modifiedText =
-        `${parentText.slice(0, genericParamStart + 1)}(...params: Array<unknown>) => ${parentText.slice(genericParamStart + 1)}`.trim();
-      for (const testFrameworkName of TEST_FRAMEWORK_NAMES) {
-        if (!modifiedText.startsWith(testFrameworkName)) continue;
-
-        modifiedText = modifiedText.slice(testFrameworkName.length + 1);
-        break;
+      const genericParamEnd = parentText.lastIndexOf('>');
+      const hasGenericParams = genericParamStart !== -1 && genericParamEnd > genericParamStart;
+      if (!hasGenericParams) {
+        return 'Mock';
       }
 
-      return parent.replace(modifiedText);
+      const genericText = parentText.slice(genericParamStart + 1, genericParamEnd).trim();
+      const isFunctionGeneric = genericText.includes('=>');
+      if (isFunctionGeneric) {
+        return parent.replace(`Mock<${genericText}>`);
+      }
+
+      return parent.replace(`Mock<(...params: Array<unknown>) => ${genericText}>`);
     },
   },
   {
