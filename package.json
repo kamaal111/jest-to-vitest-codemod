@@ -32,15 +32,17 @@
     "build": "rslib build",
     "build:clean": "rm -rf dist tsconfig.tsbuildinfo && pnpm build",
     "dev": "rslib build --watch",
+    "example:transform-check": "tsx ./scripts/example-transform-check.ts",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "lint": "eslint --max-warnings 0",
     "prepare": "husky",
+    "ready": "pnpm quality && pnpm test:cov && pnpm example:transform-check",
     "test": "vitest run",
     "test:cov": "pnpm install && vitest run --coverage",
     "test:u": "vitest run --update",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
     "quality": "pnpm install && pnpm lint && pnpm format:check && pnpm type-check"
   },
   "dependencies": {
@@ -51,6 +53,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@jest/globals": "^30.2.0",
     "@kamaalio/prettier-config": "^0.1.2",
     "@rslib/core": "^0.19.6",
     "@types/node": "^25.3.2",

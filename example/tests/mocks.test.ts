@@ -73,4 +73,23 @@ xdescribe('transformation coverage for problematic runtime cases', () => {
     const mock = jest.createMockFromModule('../src/calculator');
     expect(mock).toBeDefined();
   });
+
+  it('jest.setMock transformation', () => {
+    jest.setMock('../src/logger', { createLogger: jest.fn() });
+    expect(true).toBe(true);
+  });
+
+  it('jest.dontMock transformation', () => {
+    jest.dontMock('../src/logger');
+    expect(true).toBe(true);
+  });
+
+  it('jest.requireMock transformation inside a helper', async () => {
+    const loadCalculator = () => {
+      return jest.requireMock('../src/calculator');
+    };
+
+    const calculator = await loadCalculator();
+    expect(calculator).toBeDefined();
+  });
 });

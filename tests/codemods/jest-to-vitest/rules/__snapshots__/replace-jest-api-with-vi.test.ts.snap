@@ -1,8 +1,105 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`EUA-style jest.mock factories > keeps requireActual object mocks explicit without global helpers 1`] = `
+"import { openModalAction } from 'components/core/modal/actions';
+
+vi.mock('components/core/modal/actions', async () => {
+  const actual = (await vi.importActual('components/core/modal/actions'));
+  const mockedModule = {
+    ...actual,
+    openModalAction: vi.fn(function(payload) {
+      return ({ type: actual.openModalAction.toString(), payload });
+    }),
+  }; return { ...mockedModule, default: mockedModule };
+});"
+`;
+
+exports[`compatibility fixes > adds advanceTimers to userEvent setup in fake-timer files 1`] = `
+"vi.useFakeTimers();
+
+    test('hovers', async () => {
+      const user = userEvent.setup({ delay: null, advanceTimers: vi.advanceTimersByTime });
+    });"
+`;
+
+exports[`compatibility fixes > awaits resetModules helper calls in test files 1`] = `
+"const resetModulesAndMockEnvironment = async () => {
+      return (await import('../selectors'));
+    };
+
+    test('uses helper', async () => {
+      const { getAppFeature: getAppFeatureProd } = await resetModulesAndMockEnvironment('prod');
+      expect(getAppFeatureProd).toBeDefined();
+    });"
+`;
+
+exports[`compatibility fixes > cache busts expected failing dynamic imports 1`] = `
+"describe('mainAfterPolyfill', () => {
+      test('first import', async () => {
+        await expect(import('../mainAfterPolyfill?vitest-expected-error')).rejects.toThrowError('boom');
+      });
+
+      test('second import', async () => {
+        await import('../mainAfterPolyfill');
+await vi.dynamicImportSettled()
+      });
+    });"
+`;
+
+exports[`compatibility fixes > pairs vi.resetModules with vi.clearAllMocks 1`] = `
+"beforeEach(() => {
+      vi.resetModules(); vi.clearAllMocks();
+    });"
+`;
+
+exports[`compatibility fixes > rewrites auto-mocked export reassignments to vi.mocked calls 1`] = `
+"vi.mocked(ReactDOM.createRoot).mockReturnValue({
+      render: mockRender,
+    });"
+`;
+
+exports[`compatibility fixes > uses async timer flushing in async fake-timer tests 1`] = `
+"vi.useFakeTimers();
+
+    test('flushes timers', async () => {
+      await vi.runAllTimersAsync();
+    });"
+`;
+
+exports[`compatibility fixes > uses vi.waitFor in fake-timer files 1`] = `
+"vi.useFakeTimers();
+
+    test('waits', async () => {
+      await vi.waitFor(() => expect(mockFn).toHaveBeenCalled());
+    });"
+`;
+
+exports[`compatibility fixes > waits for nested dynamic imports after standalone imports 1`] = `
+"test('loads main module', async () => {
+      await import('../mainAfterPolyfill');
+await vi.dynamicImportSettled()
+    });"
+`;
+
+exports[`convertMockImplArrowToFunction > converts async arrow function to async regular function 1`] = `"mockFn.mockImplementation(async function(arg) { return doSomething(arg); })"`;
+
+exports[`convertMockImplArrowToFunction > converts mockImplementation block-body arrow to regular function 1`] = `"mockFn.mockImplementation(function(arg) { return doSomething(arg); })"`;
+
+exports[`convertMockImplArrowToFunction > converts mockImplementation expression-body arrow to regular function 1`] = `"mockFn.mockImplementation(function(arg) { return doSomething(arg); })"`;
+
+exports[`convertMockImplArrowToFunction > converts mockImplementationOnce arrow to regular function 1`] = `"mockFn.mockImplementationOnce(function(arg) { return doSomething(arg); })"`;
+
+exports[`convertMockImplArrowToFunction > converts vi.fn arrow to regular function 1`] = `"vi.fn(function(arg) { return doSomething(arg); })"`;
+
 exports[`jest.clearAllMocks -> vi.clearAllMocks > replaces jest clearAllMocks with vi 1`] = `"vi.clearAllMocks()"`;
 
 exports[`jest.createMockFromModule -> vi.importMock > replaces jest.createMockFromModule with vi.importMock 1`] = `"vi.importMock('./path')"`;
+
+exports[`jest.doMock -> vi.doMock > wraps bare function factories as default exports 1`] = `
+"vi.doMock('lib/local-store', () => ({ default: vi.fn().mockImplementation(() => ({
+        getItem: mockGetItemValue,
+      })) }));"
+`;
 
 exports[`jest.genMockFromModule -> vi.importMock > replaces jest genMockFromModule with vi importMock 1`] = `"vi.importMock('./path')"`;
 
@@ -24,23 +121,41 @@ exports[`jest.mock -> vi.mock > replaces jest mock with vi with return 1`] = `
 exports[`jest.mock -> vi.mock > replaces jest mock with vi with specific specifiers 1`] = `
 "import { something } from './some-path';
 
-    vi.mock('./some-path', () => ({ something: vi.fn() }))"
+    vi.mock('./some-path', () => { const mockedModule = { something: vi.fn() }; return { ...mockedModule, default: mockedModule }; })"
 `;
 
 exports[`jest.mock -> vi.mock > replaces jest mock with vi without module override 1`] = `"vi.mock('./some-path')"`;
 
+exports[`jest.mock -> vi.mock > uses vi.doMock for non-hoisted nested jest.mock calls 1`] = `
+"beforeEach(() => {
+      vi.doMock('lib/api', () => { const mockedModule = {
+        post: mockPost,
+      }; return { ...mockedModule, default: mockedModule }; });
+    });"
+`;
+
+exports[`jest.mock -> vi.mock with existing default key > replaces jest.mock preserving the existing default key without __mockModule wrapping 1`] = `"vi.mock('./some-path', () => ({ default: 'hello', extra: 'world' }))"`;
+
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual 1`] = `"(await vi.importActual('lodash/cloneDeep'))"`;
 
 exports[`jest.requireActual -> vi.importActual > replaces jest.requireActual with vi.importActual in mock 1`] = `
-"vi.mock('something', async () => ({
+"vi.mock('something', async () => { const mockedModule = {
       ...(await vi.importActual('something')),
       mocked: vi.fn()
-    }))"
+    }; return { ...mockedModule, default: mockedModule }; })"
 `;
 
 exports[`jest.resetAllMocks -> vi.resetAllMocks > replaces jest resetAllMocks with vi 1`] = `"vi.resetAllMocks()"`;
 
+exports[`jest.restoreAllMocks -> vi.restoreAllMocks > adds vi.clearAllMocks in lifecycle hooks 1`] = `
+"afterEach(() => {
+      vi.restoreAllMocks(); vi.clearAllMocks();
+    });"
+`;
+
 exports[`jest.restoreAllMocks -> vi.restoreAllMocks > replaces jest restoreAllMocks with vi 1`] = `"vi.restoreAllMocks()"`;
+
+exports[`jest.setMock -> vi.mock > replaces jest.setMock with vi.mock spreading value as default 1`] = `"vi.mock('./some-path', () => ({ ...{ mocked: true }, default: { mocked: true } }))"`;
 
 exports[`jest.setTimeout -> vi.setConfig > replaces jest setTimeout with vi 1`] = `"vi.setConfig({ testTimeout: 50_000 })"`;
 
@@ -51,3 +166,13 @@ exports[`jest.spyOn -> vi.spyOn > replaces jest spyOn with vi with a single para
 exports[`jest.useFakeTimers -> vi.useFakeTimers > replaces jest useFakeTimers with vi 1`] = `"vi.useFakeTimers()"`;
 
 exports[`jest.useRealTimers -> vi.useRealTimers > replaces jest useRealTimers with vi 1`] = `"vi.useRealTimers()"`;
+
+exports[`replaceJestDontMock > replaces jest.dontMock with vi.doUnmock 1`] = `"vi.doUnmock('./some-path')"`;
+
+exports[`replaceJestRequireMock > replaces jest.requireMock inside arrow function and makes it async 1`] = `"const fn = async () => { const mod = (await import('some-module')); return mod; }"`;
+
+exports[`replaceJestRequireMock > replaces standalone jest.requireMock with dynamic import 1`] = `"(await import('some-module'))"`;
+
+exports[`replaceJestRequireMock > replaces standalone vi.requireMock with dynamic import 1`] = `"(await import('some-module'))"`;
+
+exports[`replaceJestRequireMock > replaces vi.requireMock inside arrow function and makes it async 1`] = `"const fn = async () => { const mod = (await import('some-module')); return mod; }"`;
