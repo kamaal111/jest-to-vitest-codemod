@@ -1,0 +1,16 @@
+src/codemods/jest-to-vitest/rules/replace-jest-api-with-vi.ts
+  fe13e4aa0fcd1b15 13
+  253e31bec3aaf2b6 14
+src/codemods/jest-to-vitest/index.ts
+  eda9434d89a696bd 26
+  253e31bec3aaf2b6 21,575
+  7f76a66badd84f01 10
+tests/codemods/jest-to-vitest/rules/__snapshots__/replace-jest-api-with-vi.test.ts.snap
+  253e31bec3aaf2b6 15-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "b1c6b55a13d7865b20e757d875ced065977399c7",
+  "prompts": {}
+}
