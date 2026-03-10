@@ -1,0 +1,10 @@
+src/codemods/jest-to-vitest/index.ts
+  eda9434d89a696bd 468-475
+  ef86fd3d945d0363 512,515,517,559-560
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.10",
+  "base_commit_sha": "64a3166a0310dea1555b5f48995944c07b0b04c8",
+  "prompts": {}
+}
