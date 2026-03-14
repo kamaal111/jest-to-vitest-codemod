@@ -1,0 +1,27 @@
+src/codemods/jest-to-vitest/rules/replace-jest-api-with-vi.ts
+  253e31bec3aaf2b6 117
+  fe13e4aa0fcd1b15 116
+src/codemods/jest-to-vitest/index.ts
+  ef86fd3d945d0363 501,504,506,548-549
+  eda9434d89a696bd 457-464
+tests/codemods/jest-to-vitest/rules/__snapshots__/replace-jest-api-with-vi.test.ts.snap
+  fe13e4aa0fcd1b15 73
+  253e31bec3aaf2b6 29-30
+tests/cli.test.ts
+  eda9434d89a696bd 187
+src/codemods/jest-to-vitest/utils/jest-config-to-vitest-config.ts
+  ef86fd3d945d0363 117-118,177,261,333-334,346-348,362,390,401,435,606-607,662,667
+  eda9434d89a696bd 392,402,413,418,424,665
+tests/codemods/jest-to-vitest/rules/replace-jest-api-with-vi.test.ts
+  253e31bec3aaf2b6 252-265
+  fe13e4aa0fcd1b15 227,236
+tests/codemods/jest-to-vitest/utils/jest-config-to-vitest-config.test.ts
+  ef86fd3d945d0363 94,105-106,116,127,192,199-203,249-255
+  eda9434d89a696bd 321,334-335,337-340,344-346,350-351,353,372-373,376,381,384,387,390-400,403,406,418
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.11",
+  "base_commit_sha": "eb59364a0671b0a8fca401aee3c7f38d8680c295",
+  "prompts": {}
+}
