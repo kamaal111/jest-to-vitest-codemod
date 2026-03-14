@@ -16,4 +16,4 @@ alias pn=pnpm
 alias pnx=pnpm exec
 
 alias gpt=codex --yolo
-alias pilot=copilot --yolo
+alias pilot=copilot --yolo --autopilot --no-ask-user

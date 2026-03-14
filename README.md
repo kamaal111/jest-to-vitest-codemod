@@ -271,6 +271,7 @@ pnpm lint         # Lint code
 pnpm format       # Format code
 pnpm type-check   # Type check
 pnpm quality      # Run all quality checks
+pnpm ready        # Run the full pre-merge verification suite
 ```
 
 ## Contributing
