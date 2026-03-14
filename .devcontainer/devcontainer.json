@@ -1,0 +1,36 @@
+{
+  "name": "${localWorkspaceFolderBasename}",
+  "dockerComposeFile": ["docker-compose.code.yml"],
+  "service": "code",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "initializeCommand": "bash .devcontainer/prepare-github-copilot-auth.sh",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true,
+  "postCreateCommand": "sudo chown -R node:node /workspaces/jest-to-vitest-codemod/node_modules /workspaces/jest-to-vitest-codemod/example/node_modules && corepack enable && pnpm install",
+  "mounts": [
+    "source=${localEnv:HOME}/.codex,target=/home/node/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.copilot,target=/home/node/.copilot,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.config/gh,target=/home/node/.config/gh,type=bind,consistency=cached"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "streetsidesoftware.code-spell-checker",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "aaron-bond.better-comments",
+        "esbenp.prettier-vscode",
+        "github.copilot",
+        "dbaeumer.vscode-eslint",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github"
+      ]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  }
+}

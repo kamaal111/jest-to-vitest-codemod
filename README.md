@@ -285,6 +285,8 @@ Contributions are welcome! Please open an issue or submit a pull request.
 4. Make your changes and ensure tests pass
 5. Submit a pull request
 
+If you open the repo in the included devcontainer, it installs `codex`, `copilot`, and `gh` in the container. Codex reuses your host login by bind-mounting `~/.codex`, and GitHub Copilot reuses your existing host GitHub CLI login by generating `~/.copilot/devcontainer/copilot.env` from `gh auth token` during `initializeCommand` and passing that token into the container as `GH_TOKEN`, `GITHUB_TOKEN`, and `COPILOT_GITHUB_TOKEN`. The devcontainer also bind-mounts `~/.copilot` and `~/.config/gh` so your Copilot CLI settings and GitHub CLI config stay aligned with the host.
+
 ## License
 
 This project is licensed under the MIT License.
