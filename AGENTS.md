@@ -23,3 +23,9 @@ Use `pnpm` with Node `>=24`.
 ## Code Style
 
 - Do not use `as any`; prefer explicit types, narrowing, or typed helpers/globals.
+
+## Source Code Queries
+
+- When querying or transforming source code, always use **ast-grep** patterns and AST node traversal rather than manual string searches, character-by-character loops, or text-based heuristics (e.g. `startsWith`, `indexOf`, regex over raw source text).
+- Use `node.find({ rule: { pattern: '...' } })`, `node.children()`, `node.kind()`, and related ast-grep APIs to locate and inspect tokens reliably.
+- Derive file paths and directory lists from configuration files (e.g. jest config) rather than hardcoding project-specific strings.

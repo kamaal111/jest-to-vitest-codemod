@@ -391,6 +391,26 @@ describe('compatibility fixes', () => {
     expect(updatedSource).toContain(`test('uses helper', async () => {`);
     expect(updatedSource).toContain(`await resetModulesAndMockEnvironment('prod')`);
   });
+
+  it('does not double-async an already-async function containing resetModulesAndMockEnvironment', async () => {
+    const source = `
+    const resetModulesAndMockEnvironment = async () => {
+      return (await import('../selectors'));
+    };
+
+    test('uses helper', async () => {
+      const { getAppFeature } = resetModulesAndMockEnvironment('prod');
+      expect(getAppFeature).toBeDefined();
+    });
+    `;
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast =>
+      fixViCompatIssues(makeJestToVitestInitialModification(ast, 'selectors.test.ts')),
+    );
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).not.toContain('async async');
+    expect(updatedSource).toContain(`await resetModulesAndMockEnvironment('prod')`);
+  });
 });
 
 describe('jest.resetAllMocks -> vi.resetAllMocks', () => {
@@ -678,6 +698,48 @@ describe('convertMockImplArrowToFunction', () => {
 
     await validRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
       return convertMockImplArrowToFunction(makeJestToVitestInitialModification(ast));
+    });
+  });
+});
+
+describe('normalizeViMockFactories', () => {
+  it('normalizes a block-body vi.mock factory that returns an object literal', async () => {
+    const source = `vi.mock('some-path', () => { return { foo: bar }; })`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return normalizeViMockFactories(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain('const mockedModule = { foo: bar }');
+    expect(updatedSource).toContain('return { ...mockedModule, default: mockedModule }');
+  });
+
+  it('normalizes a block-body vi.mock factory that returns a parenthesized object', async () => {
+    const source = `vi.mock('some-path', () => { return ({ foo: bar }); })`;
+
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return normalizeViMockFactories(makeJestToVitestInitialModification(ast));
+    });
+    const updatedSource = modifications.ast.root().text();
+
+    expect(updatedSource).toContain('const mockedModule = { foo: bar }');
+    expect(updatedSource).toContain('return { ...mockedModule, default: mockedModule }');
+  });
+
+  it('does not normalize when the returned object already has a default key', async () => {
+    const source = `vi.mock('some-path', () => { return { default: foo, bar: baz }; })`;
+
+    await validRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return normalizeViMockFactories(makeJestToVitestInitialModification(ast));
+    });
+  });
+
+  it('does not normalize when the return value is not an object literal', async () => {
+    const source = `vi.mock('some-path', () => { return someFunc(); })`;
+
+    await validRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+      return normalizeViMockFactories(makeJestToVitestInitialModification(ast));
     });
   });
 });

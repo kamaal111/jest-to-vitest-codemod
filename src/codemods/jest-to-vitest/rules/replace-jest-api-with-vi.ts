@@ -50,90 +50,38 @@ function shouldUseViDoMock(node: AstNode): boolean {
   );
 }
 
-function findTopLevelReturnStatement(bodyContent: string): { start: number; end: number; expression: string } | null {
-  let blockDepth = 0;
+function normalizeViMockFactoryCallback(callbackNode: AstNode): string | null {
+  // Locate the statement-block body as a direct child of the callback node
+  const bodyNode = callbackNode.children().find(c => c.kind() === 'statement_block');
+  if (bodyNode == null) return null;
 
-  for (let index = 0; index < bodyContent.length; index += 1) {
-    const char = bodyContent[index];
+  // Find the top-level return statement: a direct child of the statement block
+  const returnNode = bodyNode.children().find(c => c.kind() === 'return_statement');
+  if (returnNode == null) return null;
 
-    if (char === '{') {
-      blockDepth += 1;
-      continue;
-    }
+  // Get the return value: first non-keyword, non-semicolon child of the return statement
+  const returnValueNode = returnNode.children().find(c => c.kind() !== 'return' && c.kind() !== ';');
+  if (returnValueNode == null) return null;
 
-    if (char === '}') {
-      blockDepth -= 1;
-      continue;
-    }
-
-    if (blockDepth !== 0 || !bodyContent.startsWith('return', index)) {
-      continue;
-    }
-
-    const previousChar = index === 0 ? '' : bodyContent[index - 1];
-    const nextChar = bodyContent[index + 'return'.length] ?? '';
-    if (/\w/.test(previousChar) || /\w/.test(nextChar)) {
-      continue;
-    }
-
-    let expressionStart = index + 'return'.length;
-    while (expressionStart < bodyContent.length && /\s/.test(bodyContent[expressionStart])) {
-      expressionStart += 1;
-    }
-
-    let expressionDepth = 0;
-    let expressionEnd = expressionStart;
-    while (expressionEnd < bodyContent.length) {
-      const expressionChar = bodyContent[expressionEnd];
-
-      if (expressionChar === '{' || expressionChar === '(' || expressionChar === '[') {
-        expressionDepth += 1;
-      } else if (expressionChar === '}' || expressionChar === ')' || expressionChar === ']') {
-        if (expressionDepth === 0) break;
-        expressionDepth -= 1;
-      } else if (expressionChar === ';' && expressionDepth === 0) {
-        break;
-      }
-
-      expressionEnd += 1;
-    }
-
-    return {
-      start: index,
-      end: expressionEnd + (bodyContent[expressionEnd] === ';' ? 1 : 0),
-      expression: bodyContent.slice(expressionStart, expressionEnd).trim(),
-    };
+  // Resolve the object node: handle `return { ... }` and `return ({ ... })`
+  let objectNode: AstNode = returnValueNode;
+  if (objectNode.kind() === 'parenthesized_expression') {
+    const inner = objectNode.children().find(c => c.kind() === 'object');
+    if (inner == null) return null;
+    objectNode = inner;
   }
 
-  return null;
-}
+  if (objectNode.kind() !== 'object') return null;
+  if (hasDefaultProperty(objectNode.text())) return null;
 
-function normalizeViMockFactoryCallback(callbackText: string): string | null {
-  const bodyStart = callbackText.indexOf('{');
-  const bodyEnd = callbackText.lastIndexOf('}');
-  if (bodyStart === -1 || bodyEnd === -1 || bodyEnd <= bodyStart) {
-    return null;
-  }
-
-  const bodyContent = callbackText.slice(bodyStart + 1, bodyEnd);
-  const topLevelReturn = findTopLevelReturnStatement(bodyContent);
-  if (topLevelReturn == null) {
-    return null;
-  }
-
-  const returnedExpression = topLevelReturn.expression;
-  const isObjectExpression =
-    (returnedExpression.startsWith('{') && returnedExpression.endsWith('}')) ||
-    (returnedExpression.startsWith('({') && returnedExpression.endsWith('})'));
-  if (!isObjectExpression || hasDefaultProperty(returnedExpression)) {
-    return null;
-  }
-
-  const normalizedObject = normalizeObjectExpressionText(returnedExpression);
+  const normalizedObject = normalizeObjectExpressionText(objectNode.text());
   const replacement = `const mockedModule = ${normalizedObject}; return { ...mockedModule, default: mockedModule };`;
-  const updatedBody = bodyContent.slice(0, topLevelReturn.start) + replacement + bodyContent.slice(topLevelReturn.end);
 
-  return `${callbackText.slice(0, bodyStart + 1)}${updatedBody}${callbackText.slice(bodyEnd)}`;
+  const callbackText = callbackNode.text();
+  const bodyText = bodyNode.text();
+  const returnText = returnNode.text();
+  const updatedBody = bodyText.replace(returnText, replacement);
+  return callbackText.replace(bodyText, updatedBody);
 }
 
 const SIMPLE_JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = Object.entries({
@@ -396,8 +344,8 @@ const NORMALIZE_VI_MOCK_FACTORIES: Array<FindAndReplaceConfig> = [
         return null;
       }
 
-      const normalizedCallback = normalizeViMockFactoryCallback(callbackMatch.text().trim());
-      if (normalizedCallback == null || normalizedCallback === callbackMatch.text().trim()) {
+      const normalizedCallback = normalizeViMockFactoryCallback(callbackMatch);
+      if (normalizedCallback == null || normalizedCallback === callbackMatch.text()) {
         return null;
       }
 
@@ -550,18 +498,11 @@ const TEST_ASYNC_HELPER_CALL_FIXES: Array<FindAndReplaceConfig> = [
 
       const functionText = containingFunction.text();
       const updatedFunction = functionText.replace(declarationText, updatedDeclaration);
-      if (updatedFunction.trim().startsWith('async ')) {
-        return containingFunction.replace(updatedFunction);
-      }
-      if (functionText.startsWith('async ')) {
-        return containingFunction.replace(updatedFunction);
-      }
-      if (functionText.startsWith('(') || functionText.startsWith('function') || functionText.startsWith('test')) {
-        return containingFunction.replace(`async ${updatedFunction}`);
-      }
 
-      if (functionText.startsWith('async(')) {
-        return null;
+      // Use the AST to check whether the containing function is already marked async
+      const isAlreadyAsync = containingFunction.children().some(c => c.kind() === 'async');
+      if (isAlreadyAsync) {
+        return containingFunction.replace(updatedFunction);
       }
 
       return containingFunction.replace(`async ${updatedFunction}`);
@@ -582,28 +523,31 @@ const MOCK_IMPL_ARROW_TO_FUNCTION: Array<FindAndReplaceConfig> = [
       const fnMatch = node.getMatch('FN');
       if (fnMatch == null || fnMatch.kind() !== 'arrow_function') return null;
 
-      const arrowText = fnMatch.text();
-      const children = fnMatch.children();
-      const arrowToken = children.find(c => c.kind() === '=>');
-      if (arrowToken == null) return null;
+      const arrowChildren = fnMatch.children();
 
-      const arrowOffset = arrowToken.range().start.index - fnMatch.range().start.index;
-      const paramsPart = arrowText.substring(0, arrowOffset).trim();
-      const bodyPart = arrowText.substring(arrowOffset + 2).trim();
+      // Detect async using the AST: async arrow functions have an `async` keyword child
+      const isAsync = arrowChildren.some(c => c.kind() === 'async');
+      const asyncPrefix = isAsync ? 'async ' : '';
 
-      const asyncPrefix = paramsPart.startsWith('async ') ? 'async ' : '';
-      const rawParams = asyncPrefix ? paramsPart.slice(6).trim() : paramsPart;
-      const normalizedParams = rawParams.startsWith('(') ? rawParams : `(${rawParams})`;
+      // Locate the params node: parenthesized `formal_parameters` or bare `identifier`
+      const paramsNode = arrowChildren.find(c => c.kind() === 'formal_parameters' || c.kind() === 'identifier');
+      if (paramsNode == null) return null;
 
-      let functionBody: string;
-      if (bodyPart.startsWith('{')) {
-        functionBody = bodyPart;
-      } else {
-        functionBody = `{ return ${bodyPart}; }`;
-      }
+      // Single unparenthesized identifier params need to be wrapped
+      const normalizedParams = paramsNode.kind() === 'formal_parameters' ? paramsNode.text() : `(${paramsNode.text()})`;
+
+      // Locate the body: the node immediately after the `=>` token
+      const arrowIdx = arrowChildren.findIndex(c => c.kind() === '=>');
+      if (arrowIdx === -1) return null;
+      const bodyNode = arrowChildren[arrowIdx + 1];
+      if (bodyNode == null) return null;
+
+      // Expression-body arrows need an explicit `return` wrapper
+      const functionBody = bodyNode.kind() === 'statement_block' ? bodyNode.text() : `{ return ${bodyNode.text()}; }`;
 
       const regularFn = `${asyncPrefix}function${normalizedParams} ${functionBody}`;
       const fullText = node.text();
+      const arrowText = fnMatch.text();
       return fullText.replace(arrowText, regularFn);
     },
   },

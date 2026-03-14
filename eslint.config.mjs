@@ -13,7 +13,7 @@ export default [
       '@typescript-eslint/no-unused-vars': 'error',
     },
   },
-  { ignores: ['.tmp-example-*', 'dist/', 'coverage'] },
+  { ignores: ['dist/', 'coverage'] },
   {
     files: ['example/**'],
     rules: {

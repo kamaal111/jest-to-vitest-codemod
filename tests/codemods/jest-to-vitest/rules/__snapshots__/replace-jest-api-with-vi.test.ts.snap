@@ -46,6 +46,17 @@ await vi.dynamicImportSettled()
     });"
 `;
 
+exports[`compatibility fixes > does not double-async an already-async function containing resetModulesAndMockEnvironment 1`] = `
+"const resetModulesAndMockEnvironment = async () => {
+      return (await import('../selectors'));
+    };
+
+    test('uses helper', async () => {
+      const { getAppFeature } = await resetModulesAndMockEnvironment('prod');
+      expect(getAppFeature).toBeDefined();
+    });"
+`;
+
 exports[`compatibility fixes > pairs vi.resetModules with vi.clearAllMocks 1`] = `
 "beforeEach(() => {
       vi.resetModules(); vi.clearAllMocks();
@@ -166,6 +177,10 @@ exports[`jest.spyOn -> vi.spyOn > replaces jest spyOn with vi with a single para
 exports[`jest.useFakeTimers -> vi.useFakeTimers > replaces jest useFakeTimers with vi 1`] = `"vi.useFakeTimers()"`;
 
 exports[`jest.useRealTimers -> vi.useRealTimers > replaces jest useRealTimers with vi 1`] = `"vi.useRealTimers()"`;
+
+exports[`normalizeViMockFactories > normalizes a block-body vi.mock factory that returns a parenthesized object 1`] = `"vi.mock('some-path', () => { const mockedModule = { foo: bar }; return { ...mockedModule, default: mockedModule }; })"`;
+
+exports[`normalizeViMockFactories > normalizes a block-body vi.mock factory that returns an object literal 1`] = `"vi.mock('some-path', () => { const mockedModule = { foo: bar }; return { ...mockedModule, default: mockedModule }; })"`;
 
 exports[`replaceJestDontMock > replaces jest.dontMock with vi.doUnmock 1`] = `"vi.doUnmock('./some-path')"`;
 

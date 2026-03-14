@@ -383,16 +383,27 @@ async function generateVitestConfigFile(
   await fs.writeFile(path.join(root, vitestConfigName), vitestConfigContent);
 }
 
-async function transformAuxiliaryTestFiles(root: string): Promise<void> {
-  const auxiliaryDirs = ['test-utils', 'tests', 'scripts/tests'];
-  const auxiliaryFiles = ['jest-mock-config.js', 'jest-cucumber-config.js'];
+const AUXILIARY_SCAN_EXCLUDED_DIRS = new Set(['node_modules', 'dist', 'build', 'coverage']);
 
-  for (const dirName of auxiliaryDirs) {
-    await transformDirFiles(path.join(root, dirName));
+async function transformAuxiliaryTestFiles(root: string): Promise<void> {
+  let entries: Dirent[];
+  try {
+    entries = await fs.readdir(root, { withFileTypes: true });
+  } catch {
+    return;
   }
 
-  for (const fileName of auxiliaryFiles) {
-    await transformSingleFile(path.join(root, fileName));
+  for (const entry of entries) {
+    if (entry.name.startsWith('.')) continue;
+
+    const fullPath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      if (AUXILIARY_SCAN_EXCLUDED_DIRS.has(entry.name)) continue;
+      await transformDirFiles(fullPath);
+    } else if (entry.isFile() && /^jest-.+\.(js|ts|mjs|cjs)$/.test(entry.name)) {
+      // Transform any root-level jest-* helper/config files (e.g. jest-mock-config.js)
+      await transformSingleFile(fullPath);
+    }
   }
 }
 
@@ -610,14 +621,6 @@ async function jestToVitestPostTransform(
 
   const primaryConfigMapping = await loadPrimaryVitestConfigMapping(root, content, pathAliases);
   const additionalSetupFiles: string[] = [];
-  for (const setupPath of ['scripts/tests/setup-env.js', 'scripts/tests/setup-env.ts']) {
-    try {
-      await fs.access(path.join(root, setupPath));
-      additionalSetupFiles.push(`./${setupPath}`);
-    } catch {
-      // File doesn't exist
-    }
-  }
 
   const customEnvSetupFile = await generateCustomEnvSetup(root, primaryConfigMapping);
   if (customEnvSetupFile != null) {

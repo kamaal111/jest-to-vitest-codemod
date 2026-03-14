@@ -222,6 +222,10 @@ export default config;`;
     await mkdir(scriptsTestsDir, { recursive: true });
     await writeFile(join(scriptsTestsDir, 'setup-env.js'), 'globalThis.__SETUP_ENV__ = true;\n');
     await writeFile(
+      join(tempDir, 'jest.config.ts'),
+      `export default { setupFilesAfterEnv: ['./scripts/tests/setup-env.js'] };`,
+    );
+    await writeFile(
       join(tempDir, 'test.spec.ts'),
       "describe('a', () => { it('b', () => { expect(true).toBe(true); }); });",
     );
@@ -229,7 +233,7 @@ export default config;`;
     runCli(tempDir);
 
     const vitestSetup = await readFile(join(tempDir, 'vitest.config.setup.ts'), 'utf-8');
-    expect(vitestSetup).toContain('import "./scripts/tests/setup-env.js";');
+    expect(vitestSetup).toContain("import './scripts/tests/setup-env.js';");
   });
 
   it('leaves auxiliary setup files unchanged when they only need repo-specific migration work', async () => {
