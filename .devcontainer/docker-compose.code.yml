@@ -1,0 +1,18 @@
+services:
+  code:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: jest-to-vitest-codemod-code
+    init: true
+    env_file:
+      - ${HOME}/.copilot/devcontainer/copilot.env
+    volumes:
+      - ..:/workspaces/jest-to-vitest-codemod:cached
+      - jest-to-vitest-codemod-node-modules:/workspaces/jest-to-vitest-codemod/node_modules
+      - jest-to-vitest-codemod-example-node-modules:/workspaces/jest-to-vitest-codemod/example/node_modules
+    command: sleep infinity
+
+volumes:
+  jest-to-vitest-codemod-node-modules:
+  jest-to-vitest-codemod-example-node-modules:
