@@ -182,6 +182,8 @@ exports[`normalizeViMockFactories > normalizes a block-body vi.mock factory that
 
 exports[`normalizeViMockFactories > normalizes a block-body vi.mock factory that returns an object literal 1`] = `"vi.mock('some-path', () => { const mockedModule = { foo: bar }; return { ...mockedModule, default: mockedModule }; })"`;
 
+exports[`normalizeViMockFactories > normalizes only the top-level return when a nested block has an identical return 1`] = `"vi.mock('some-path', () => { if (cond) { return { foo: bar }; } const mockedModule = { foo: bar }; return { ...mockedModule, default: mockedModule }; })"`;
+
 exports[`replaceJestDontMock > replaces jest.dontMock with vi.doUnmock 1`] = `"vi.doUnmock('./some-path')"`;
 
 exports[`replaceJestRequireMock > replaces jest.requireMock inside arrow function and makes it async 1`] = `"const fn = async () => { const mod = (await import('some-module')); return mod; }"`;

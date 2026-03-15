@@ -77,11 +77,13 @@ function normalizeViMockFactoryCallback(callbackNode: AstNode): string | null {
   const normalizedObject = normalizeObjectExpressionText(objectNode.text());
   const replacement = `const mockedModule = ${normalizedObject}; return { ...mockedModule, default: mockedModule };`;
 
+  // Use AST node ranges to precisely target the return statement within the callback text,
+  // avoiding a naive string replace that would corrupt an identically-worded nested return.
+  const callbackStart = callbackNode.range().start.index;
+  const returnStart = returnNode.range().start.index - callbackStart;
+  const returnEnd = returnNode.range().end.index - callbackStart;
   const callbackText = callbackNode.text();
-  const bodyText = bodyNode.text();
-  const returnText = returnNode.text();
-  const updatedBody = bodyText.replace(returnText, replacement);
-  return callbackText.replace(bodyText, updatedBody);
+  return callbackText.slice(0, returnStart) + replacement + callbackText.slice(returnEnd);
 }
 
 const SIMPLE_JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = Object.entries({

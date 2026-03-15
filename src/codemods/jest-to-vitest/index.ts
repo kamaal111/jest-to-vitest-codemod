@@ -383,30 +383,6 @@ async function generateVitestConfigFile(
   await fs.writeFile(path.join(root, vitestConfigName), vitestConfigContent);
 }
 
-const AUXILIARY_SCAN_EXCLUDED_DIRS = new Set(['node_modules', 'dist', 'build', 'coverage']);
-
-async function transformAuxiliaryTestFiles(root: string): Promise<void> {
-  let entries: Dirent[];
-  try {
-    entries = await fs.readdir(root, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
-  for (const entry of entries) {
-    if (entry.name.startsWith('.')) continue;
-
-    const fullPath = path.join(root, entry.name);
-    if (entry.isDirectory()) {
-      if (AUXILIARY_SCAN_EXCLUDED_DIRS.has(entry.name)) continue;
-      await transformDirFiles(fullPath);
-    } else if (entry.isFile() && /^jest-.+\.(js|ts|mjs|cjs)$/.test(entry.name)) {
-      // Transform any root-level jest-* helper/config files (e.g. jest-mock-config.js)
-      await transformSingleFile(fullPath);
-    }
-  }
-}
-
 async function transformDirFiles(dirPath: string): Promise<void> {
   let entries: Dirent[];
   try {
@@ -692,7 +668,7 @@ async function jestToVitestPostTransform(
     });
   }
 
-  await transformAuxiliaryTestFiles(root);
+  await transformDirFiles(root);
 
   const autoMocks = await collectAutoMocks(root, primaryConfigMapping.moduleDirectories ?? []);
   if (autoMocks.length > 0) {

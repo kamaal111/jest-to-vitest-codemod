@@ -735,11 +735,18 @@ describe('normalizeViMockFactories', () => {
     });
   });
 
-  it('does not normalize when the return value is not an object literal', async () => {
-    const source = `vi.mock('some-path', () => { return someFunc(); })`;
+  it('normalizes only the top-level return when a nested block has an identical return', async () => {
+    const source = `vi.mock('some-path', () => { if (cond) { return { foo: bar }; } return { foo: bar }; })`;
 
-    await validRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
+    const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
       return normalizeViMockFactories(makeJestToVitestInitialModification(ast));
     });
+    const updatedSource = modifications.ast.root().text();
+
+    // The nested return inside if must be untouched
+    expect(updatedSource).toContain('if (cond) { return { foo: bar }; }');
+    // Only the top-level return is normalized
+    expect(updatedSource).toContain('const mockedModule = { foo: bar }');
+    expect(updatedSource).toContain('return { ...mockedModule, default: mockedModule }');
   });
 });
