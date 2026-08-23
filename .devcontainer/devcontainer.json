@@ -6,7 +6,7 @@
   "initializeCommand": "bash .devcontainer/prepare-github-copilot-auth.sh",
   "remoteUser": "node",
   "updateRemoteUserUID": true,
-  "postCreateCommand": "sudo chown -R node:node /workspaces/jest-to-vitest-codemod/node_modules /workspaces/jest-to-vitest-codemod/example/node_modules && corepack enable && pnpm install",
+  "postCreateCommand": "just post-dev-container-create",
   "mounts": [
     "source=${localEnv:HOME}/.codex,target=/home/node/.codex,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.copilot,target=/home/node/.copilot,type=bind,consistency=cached",
@@ -15,22 +15,37 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "zsh"
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "editor.defaultFormatter": "oxc.oxc-vscode",
+        "[javascript]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "oxc.oxc-vscode"
+        }
       },
       "extensions": [
+        "skellock.just",
         "streetsidesoftware.code-spell-checker",
+        "redhat.vscode-yaml",
         "ms-azuretools.vscode-docker",
         "eamodio.gitlens",
         "aaron-bond.better-comments",
-        "esbenp.prettier-vscode",
         "github.copilot",
-        "dbaeumer.vscode-eslint",
         "github.vscode-github-actions",
-        "github.vscode-pull-request-github"
+        "github.vscode-pull-request-github",
+        "oxc.oxc-vscode"
       ]
     }
   },
   "features": {
+    "ghcr.io/guiyomh/features/just:0": {},
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   }
 }

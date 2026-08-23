@@ -1,6 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:24-bookworm
-
-ARG PNPM_VERSION="10.13.1"
+FROM mcr.microsoft.com/devcontainers/javascript-node:26-bookworm
 
 RUN apt-get update \
   && export DEBIAN_FRONTEND=noninteractive \
@@ -9,8 +7,10 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable \
-  && corepack prepare "pnpm@${PNPM_VERSION}" --activate \
+ENV PNPM_HOME="/home/node/.local/share/pnpm"
+ENV PATH="${PNPM_HOME}:${PATH}"
+COPY package.json /tmp/package.json
+RUN su node -c "curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=\"$(jq -r '.devEngines.packageManager.version' /tmp/package.json)\" SHELL=\"$(which bash)\" bash -" \
   && npm install -g @github/copilot @openai/codex
 
 RUN su node -c 'mkdir -p ~/.oh-my-zsh/custom/plugins' \

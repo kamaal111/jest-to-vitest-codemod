@@ -2,17 +2,24 @@
 
 ## Build, Test, and Development Commands
 
-Use `pnpm` with Node `>=24`.
+Use `pnpm` on Node.js `>=26` (see `.node-version`); the pnpm version comes from
+`devEngines.packageManager` in `package.json`.
 
-- `pnpm build`: compile the package into `dist/`.
-- `pnpm dev`: rebuild on file changes.
+- `pnpm build`: compile TypeScript into `dist/`.
+- `pnpm clean:build`: wipe `dist/` and rebuild.
 - `pnpm test`: run the Vitest suite once.
 - `pnpm test:watch`: run tests in watch mode.
+- `pnpm test:cov`: collect coverage for `src/`.
 - `pnpm test:u`: update snapshots after intentional output changes.
-- `pnpm lint`: run ESLint with zero warnings allowed.
-- `pnpm format` / `pnpm format:check`: apply or verify Prettier formatting.
-- `pnpm type-check`: run `tsc --noEmit`.
-- `pnpm quality`: run the main pre-merge checks.
+- `pnpm lint` and `pnpm format:check`: enforce oxlint and oxfmt rules.
+- `pnpm lint:example`: lint the example app with its own oxlint config.
+- `pnpm type-check`, `pnpm type-check:test`, `pnpm type-check:scripts`: verify TypeScript without emitting.
+- `pnpm example:transform-check`: validate the example app before and after transformation, then restore it.
+- `just quality`: run the main local quality gate (`lint`, `format-check`, and every `type-check`).
+
+The CLI has two entry points: `bin/dev.mjs` runs `src/` directly through Node's native TypeScript
+type stripping, and `bin/run.mjs` runs the compiled `dist/`. Set `CLI_ENTRY=dist` to point the test
+suite and `just` recipes at the compiled output.
 
 ## Completion Requirements
 
@@ -22,4 +29,8 @@ Use `pnpm` with Node `>=24`.
 
 ## Code Style
 
-- Do not use `as any`; prefer explicit types, narrowing, or typed helpers/globals.
+- Do not use `as any`; prefer explicit types, narrowing, or typed helpers/globals. oxlint rejects
+  type assertions outright in `src/`.
+- Source files import each other with explicit `.ts` extensions, which `tsc` rewrites to `.js` on
+  build. Node's type stripping is strip-only, so no enums, namespaces, or constructor parameter
+  properties.

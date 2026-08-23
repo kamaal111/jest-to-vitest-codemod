@@ -14,6 +14,9 @@
   - [Usage](#usage)
     - [Basic String Transformation](#basic-string-transformation)
     - [CLI](#cli)
+      - [Flags](#flags)
+      - [Examples](#examples)
+      - [Config](#config)
     - [Advanced Usage with Codemod Framework](#advanced-usage-with-codemod-framework)
     - [File Processing with Filename Context](#file-processing-with-filename-context)
   - [Before/After Examples](#beforeafter-examples)
@@ -71,8 +74,10 @@ This codemod performs the following transformations:
 
 ## Requirements
 
-- Node.js ≥ 22.0.0
+- Node.js ≥ 22.0.0 (development targets the version in `.node-version`)
 - TypeScript files (currently supports TypeScript syntax)
+
+The published package is ESM only. Import it with `import`; `require()` is not supported.
 
 ## Installation
 
@@ -135,11 +140,72 @@ describe('my test', () => {
 
 ### CLI
 
-Run the codemod over a directory directly from the command line:
+Run the codemod over a file or directory directly from the command line:
 
 ```bash
 npx jest-to-vitest-codemod ./src
 ```
+
+`PATH` may be a file or a directory. Running the CLI with no arguments prints the help text rather
+than transforming the working directory — pass `.` explicitly if that is what you want.
+
+#### Flags
+
+| Flag        | Default | Description                                                                     |
+| ----------- | ------- | ------------------------------------------------------------------------------- |
+| `--dry`     | `false` | Print what would change without writing files                                   |
+| `--no-log`  | `false` | Disable log output                                                              |
+| `--config`  | —       | Path to a JSON config file listing the paths to migrate (see [Config](#config)) |
+| `--help`    | —       | Print the help text                                                             |
+| `--version` | —       | Print the installed version                                                     |
+
+`--config` and `PATH` are mutually exclusive: pass one or the other, not both.
+
+#### Examples
+
+```bash
+# Transform a specific directory
+jest-to-vitest-codemod src
+
+# Transform a single file
+jest-to-vitest-codemod src/user-service.test.ts
+
+# Preview changes without writing them
+jest-to-vitest-codemod src --dry
+
+# Run quietly
+jest-to-vitest-codemod src --no-log
+
+# Transform the paths listed in a config file
+jest-to-vitest-codemod --config jest-migration-phase1.json
+```
+
+#### Config
+
+For larger or staged migrations, pass `--config` with a JSON file listing the paths to transform
+instead of a single `PATH`:
+
+```json
+{
+  "paths": ["src/components", "src/services"]
+}
+```
+
+Each entry in `paths` is transformed the same way a positional `PATH` argument would be, and the
+project root is resolved separately for each one, so a config may span several packages. The config
+file can also set `dry_run` to default that run to dry-run mode, without needing `--dry` on the
+command line, and `log` to control log output, without needing `--no-log`:
+
+```json
+{
+  "paths": ["src/components"],
+  "dry_run": true,
+  "log": false
+}
+```
+
+Passing both `--dry` and a config `dry_run` at the same time is an error — pick one. The same
+applies to `--no-log` and a config `log`.
 
 ### Advanced Usage with Codemod Framework
 
@@ -232,12 +298,23 @@ Transforms Jest code to Vitest. Accepts either a string of code or a parsed AST 
 // Codemod configuration for use with codemod frameworks
 export const JEST_TO_VITEST_CODEMOD: Codemod;
 
+// Same codemod, with every post-transform write guarded by dryRun
+export function makeJestToVitestCodemod(options?: { dryRun?: boolean }): Codemod;
+
 // AST language configuration (TypeScript)
 export const JEST_TO_VITEST_LANGUAGE: Lang;
 
 // Low-level transformation function
 export function jestToVitestModifications(modifications: Modifications): Promise<Modifications>;
+
+// The CLI entry point, as used by bin/run.mjs
+export function run(argv?: Array<string>): Promise<void>;
 ```
+
+`JEST_TO_VITEST_CODEMOD.postTransform` generates the Vitest config, setup files and `package.json`
+updates. Whether it writes them to disk is the codemod's own call, not the runner's: use
+`makeJestToVitestCodemod({ dryRun: true })` and every write in that step is skipped, while the rest
+of the step still runs so its output can be inspected.
 
 ## Behavior and Limitations
 
@@ -260,18 +337,31 @@ pnpm test:cov      # Run tests with coverage
 ### Building
 
 ```bash
-pnpm build         # Build the package
-pnpm dev          # Build in watch mode
+pnpm build         # Compile src/ into dist/ with tsc
+pnpm clean:build   # Wipe dist/ and rebuild
 ```
+
+The CLI has two entry points: `bin/dev.mjs` runs `src/` directly through Node's native TypeScript
+type stripping, and `bin/run.mjs` runs the compiled `dist/`. Set `CLI_ENTRY=dist` to point the test
+suite and the `just` recipes at the compiled output.
 
 ### Code Quality
 
 ```bash
-pnpm lint         # Lint code
-pnpm format       # Format code
+pnpm lint         # Lint with oxlint
+pnpm format       # Format with oxfmt
 pnpm type-check   # Type check
 pnpm quality      # Run all quality checks
 pnpm ready        # Run the full pre-merge verification suite
+```
+
+The same tasks are available through [`just`](https://github.com/casey/just), which is what CI runs:
+
+```bash
+just bootstrap               # Install dependencies
+just quality                 # lint + format-check + every type-check
+just test-cov                # Tests with coverage
+just example-transform-check # Validate the example app before and after transformation
 ```
 
 ## Contributing
