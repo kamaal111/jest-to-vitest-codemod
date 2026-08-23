@@ -1,15 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 const runCodemod = vi.hoisted(() => vi.fn());
+const loadCodemodConfig = vi.hoisted(() => vi.fn());
 
 vi.mock('@kamaalio/codemod-kit', () => ({
   runCodemod,
+  loadCodemodConfig,
 }));
 
-import { findProjectRoot, main } from '../src/cli';
+import { findProjectRoot, run } from '../src/cli.ts';
 
 describe('src/cli', () => {
   const originalArgv = [...process.argv];
@@ -18,6 +21,7 @@ describe('src/cli', () => {
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'jtv-cli-source-'));
     runCodemod.mockReset();
+    loadCodemodConfig.mockReset();
     process.argv = [...originalArgv];
   });
 
@@ -42,17 +46,12 @@ describe('src/cli', () => {
     expect(findProjectRoot(nestedDir)).toBe(nestedDir);
   });
 
-  it('prints usage and exits when no target path is provided', async () => {
-    process.argv = ['node', 'src/cli.ts'];
+  it('prints the help text instead of transforming when no target path is provided', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(((code?: string | number | null | undefined) => {
-      throw new Error(`process.exit:${code ?? ''}`);
-    }) as typeof process.exit);
+    await run([]);
 
-    await expect(main()).rejects.toThrow('process.exit:1');
-    expect(errorSpy).toHaveBeenCalledWith('Usage: jest-to-vitest-codemod <path>');
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(logSpy.mock.calls.map(call => String(call[0])).join('\n')).toContain('USAGE');
     expect(runCodemod).not.toHaveBeenCalled();
   });
 
@@ -61,15 +60,33 @@ describe('src/cli', () => {
     const nestedTarget = join(projectRoot, 'packages', 'feature');
     await mkdir(nestedTarget, { recursive: true });
     await writeFile(join(projectRoot, 'package.json'), '{}\n');
-    process.argv = ['node', 'src/cli.ts', nestedTarget];
 
-    await main();
+    await run([nestedTarget]);
 
     expect(runCodemod).toHaveBeenCalledTimes(1);
     expect(runCodemod).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'jest-to-vitest-transformer' }),
-      nestedTarget,
+      { paths: [nestedTarget], dry_run: false, log: true },
       { rootPaths: [projectRoot] },
     );
+  });
+
+  it('resolves a project root for every path listed in a config file', async () => {
+    const firstRoot = join(tempDir, 'first');
+    const secondRoot = join(tempDir, 'second');
+    await mkdir(join(firstRoot, 'tests'), { recursive: true });
+    await mkdir(join(secondRoot, 'tests'), { recursive: true });
+    await writeFile(join(firstRoot, 'package.json'), '{}\n');
+    await writeFile(join(secondRoot, 'package.json'), '{}\n');
+
+    const configPath = join(tempDir, 'migration.json');
+    loadCodemodConfig.mockResolvedValue({ paths: [join(firstRoot, 'tests'), join(secondRoot, 'tests')] });
+
+    await run(['--config', configPath]);
+
+    expect(runCodemod).toHaveBeenCalledTimes(1);
+    expect(runCodemod).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+      rootPaths: [firstRoot, secondRoot],
+    });
   });
 });

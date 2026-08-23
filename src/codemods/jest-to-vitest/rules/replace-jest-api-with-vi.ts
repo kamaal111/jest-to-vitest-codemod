@@ -370,7 +370,10 @@ const JEST_TO_VITEST_API_MAPPING: Array<FindAndReplaceConfig> = [
       const pathMatch = node.getMatch('PATH')?.text();
       const valueMatch = node.getMatch('VALUE')?.text();
       asserts.invariant(pathMatch != null && valueMatch != null, 'setMock requires path and value');
-      return `vi.mock(${pathMatch}, () => ({ ...${valueMatch}, default: ${valueMatch} }))`;
+      return `vi.mock(${pathMatch}, () => {
+  const mockedModule = ${valueMatch};
+  return { ...mockedModule, default: mockedModule };
+})`;
     },
   },
   {

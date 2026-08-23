@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+
+import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import removeJestImport from '../../../../src/codemods/jest-to-vitest/rules/remove-jest-import';
 import { invalidRuleSignal } from '../../../test-utils/detection-theory';
-import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 
 describe('removeJestImport', () => {
   it('removes jest import', async () => {

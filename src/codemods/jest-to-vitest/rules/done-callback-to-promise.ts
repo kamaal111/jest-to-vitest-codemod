@@ -1,10 +1,10 @@
+import type { SgNode } from '@ast-grep/napi';
+import type { TypesMap, Kinds } from '@ast-grep/napi/types/staticTypes.js';
 import {
   type FindAndReplaceConfig,
   findAndReplaceConfigModifications,
   type Modifications,
 } from '@kamaalio/codemod-kit';
-import type { SgNode } from '@ast-grep/napi';
-import type { TypesMap, Kinds } from '@ast-grep/napi/types/staticTypes.js';
 
 type AstNode = SgNode<TypesMap, Kinds<TypesMap>>;
 

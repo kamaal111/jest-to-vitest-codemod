@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal } from '../../test-utils/detection-theory';
 import {
   default as jestToVitest,
   JEST_TO_VITEST_LANGUAGE,
   jestToVitestModifications,
   makeJestToVitestInitialModification,
 } from '../../../src/codemods/jest-to-vitest';
+import { invalidRuleSignal } from '../../test-utils/detection-theory';
 
 describe('jest.SpyInstance -> MockInstance', () => {
   it('replaces jest SpyInstance with vi MockInstance', async () => {

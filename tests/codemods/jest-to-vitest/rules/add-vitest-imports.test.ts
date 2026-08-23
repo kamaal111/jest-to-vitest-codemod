@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
-import addVitestImports from '../../../../src/codemods/jest-to-vitest/rules/add-vitest-imports';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
+import addVitestImports from '../../../../src/codemods/jest-to-vitest/rules/add-vitest-imports';
+import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('addVitestImports', () => {
   it('collects vitest functions and imports them', async () => {

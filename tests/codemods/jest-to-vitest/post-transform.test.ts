@@ -1,17 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { JEST_TO_VITEST_CODEMOD } from '../../../src/codemods/jest-to-vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-async function runPostTransform(root: string): Promise<void> {
-  const postTransform = JEST_TO_VITEST_CODEMOD.postTransform;
+import { JEST_TO_VITEST_CODEMOD, makeJestToVitestCodemod } from '../../../src/codemods/jest-to-vitest';
+
+async function runPostTransform(root: string, codemod = JEST_TO_VITEST_CODEMOD): Promise<void> {
+  const postTransform = codemod.postTransform;
   if (postTransform == null) {
     throw new Error('Expected the codemod to expose a postTransform hook');
   }
 
-  await postTransform({ root, results: [] }, JEST_TO_VITEST_CODEMOD);
+  await postTransform({ root, results: [] }, codemod);
 }
 
 describe('jest-to-vitest postTransform', () => {
@@ -51,9 +52,9 @@ describe('jest-to-vitest postTransform', () => {
     const vitestConfig = await readFile(join(tempDir, 'vitest.config.ts'), 'utf-8');
     const vitestSetup = await readFile(join(tempDir, 'vitest.config.setup.ts'), 'utf-8');
     const customEnvSetup = await readFile(join(tempDir, 'vitest-custom-env-setup.ts'), 'utf-8');
-    const packageJson = JSON.parse(await readFile(join(tempDir, 'package.json'), 'utf-8')) as {
-      devDependencies?: Record<string, string>;
-    };
+    const packageJson: { devDependencies?: Record<string, string> } = JSON.parse(
+      await readFile(join(tempDir, 'package.json'), 'utf-8'),
+    );
 
     expect(vitestConfig).toContain("environment: 'jsdom'");
     expect(vitestConfig).toContain("setupFiles: ['./vitest.config.setup.ts']");
@@ -116,5 +117,47 @@ describe('jest-to-vitest postTransform', () => {
     const updatedTest = await readFile(join(tempDir, 'tests', 'calculator.test.ts'), 'utf-8');
 
     expect(updatedTest).toContain(`vi.mock('calculator', () => import("./__mocks__/calculator"))`);
+  });
+
+  it('writes nothing when the codemod is built with dryRun: true', async () => {
+    await mkdir(join(tempDir, 'config'), { recursive: true });
+    const originalPackageJson =
+      JSON.stringify({ name: 'fixture', devDependencies: { jest: '^30.0.0' } }, null, 2) + '\n';
+    await writeFile(join(tempDir, 'package.json'), originalPackageJson);
+    await writeFile(
+      join(tempDir, 'jest.config.ts'),
+      `export default {
+  testEnvironment: './config/custom-env.js',
+};`,
+    );
+    await writeFile(join(tempDir, 'config', 'custom-env.js'), "URL.createObjectURL = () => '';");
+
+    await runPostTransform(tempDir, makeJestToVitestCodemod({ dryRun: true }));
+
+    const entriesAfter = await readdir(tempDir);
+    expect(entriesAfter.sort()).toEqual(['config', 'jest.config.ts', 'package.json']);
+    expect(await readFile(join(tempDir, 'package.json'), 'utf-8')).toBe(originalPackageJson);
+  });
+
+  it('leaves an existing test file untouched when the codemod is built with dryRun: true', async () => {
+    await mkdir(join(tempDir, 'tests', '__mocks__'), { recursive: true });
+    await writeFile(join(tempDir, 'package.json'), JSON.stringify({ name: 'fixture' }, null, 2) + '\n');
+    await writeFile(
+      join(tempDir, 'jest.config.ts'),
+      `export default {
+  moduleDirectories: ['tests', 'node_modules'],
+};`,
+    );
+    await writeFile(join(tempDir, 'tests', '__mocks__', 'calculator.ts'), 'export const add = () => 99;\n');
+    const originalTest = `
+      import { vi } from 'vitest';
+
+      vi.mock('calculator');
+      `;
+    await writeFile(join(tempDir, 'tests', 'calculator.test.ts'), originalTest);
+
+    await runPostTransform(tempDir, makeJestToVitestCodemod({ dryRun: true }));
+
+    expect(await readFile(join(tempDir, 'tests', 'calculator.test.ts'), 'utf-8')).toBe(originalTest);
   });
 });

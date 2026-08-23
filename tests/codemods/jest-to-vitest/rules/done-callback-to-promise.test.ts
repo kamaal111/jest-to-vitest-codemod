@@ -1,8 +1,8 @@
 import { describe, it } from 'vitest';
 
-import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import { doneCallbackToPromise } from '../../../../src/codemods/jest-to-vitest/rules/done-callback-to-promise';
+import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('doneCallbackToPromise', () => {
   describe('test()', () => {

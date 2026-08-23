@@ -1,8 +1,6 @@
+import { Lang, parseAsync, type SgNode } from '@ast-grep/napi';
+import type { Kinds, TypesMap } from '@ast-grep/napi/types/staticTypes.js';
 import { parse as parseJsonc } from 'jsonc-parser';
-
-import { Lang, parseAsync } from '@ast-grep/napi';
-import type { SgNode } from '@ast-grep/napi';
-import type { TypesMap } from '@ast-grep/napi/types/staticTypes.js';
 
 function isPlainObject<T extends object>(value: unknown): value is T {
   return typeof value === 'object' && value !== null;
@@ -81,14 +79,18 @@ function getDirectPairs(objectNode: SgNode<TypesMap>): Array<SgNode<TypesMap>> {
 }
 
 // Punctuation node kinds used as delimiters in array and object literals.
-const COLLECTION_DELIMITER_KINDS: ReadonlySet<string> = new Set(['[', ']', '{', '}', ',']);
+const COLLECTION_DELIMITER_KINDS: ReadonlySet<Kinds<TypesMap>> = new Set(['[', ']', '{', '}', ',']);
+
+function isCollectionDelimiter(node: SgNode<TypesMap>): boolean {
+  return COLLECTION_DELIMITER_KINDS.has(node.kind());
+}
 
 // Use AST node kind + child count to detect empty arrays/objects,
 // correctly handling whitespace variants like `[  ]` or `{   }`.
 function isEmptyCollectionNode(valueNode: SgNode<TypesMap>): boolean {
   const kind = valueNode.kind();
   if (kind !== 'array' && kind !== 'object') return false;
-  const meaningfulChildren = valueNode.children().filter(c => !COLLECTION_DELIMITER_KINDS.has(c.kind() as string));
+  const meaningfulChildren = valueNode.children().filter(c => !isCollectionDelimiter(c));
   return meaningfulChildren.length === 0;
 }
 
@@ -110,7 +112,7 @@ function findValueNodeInPairs(pairs: Array<SgNode<TypesMap>>, keyName: string): 
 function extractLiteralArrayElements(arrayNode: SgNode<TypesMap>): string[] {
   return arrayNode
     .children()
-    .filter(c => !COLLECTION_DELIMITER_KINDS.has(c.kind() as string) && c.kind() !== 'spread_element')
+    .filter(c => !isCollectionDelimiter(c) && c.kind() !== 'spread_element')
     .map(c => c.text().trim());
 }
 
@@ -141,7 +143,7 @@ function extractCoverageIncludeAndExclude(configPairs: Array<SgNode<TypesMap>>):
   const valueNode = findValueNodeInPairs(configPairs, 'collectCoverageFrom');
   if (valueNode == null || isEmptyCollectionNode(valueNode)) return { include: null, exclude: null };
 
-  const elements = valueNode.children().filter(c => !COLLECTION_DELIMITER_KINDS.has(c.kind() as string));
+  const elements = valueNode.children().filter(c => !isCollectionDelimiter(c));
 
   const includeItems: string[] = [];
   const excludeItems: string[] = [];
