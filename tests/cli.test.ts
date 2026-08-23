@@ -1,14 +1,17 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { spawnSync } from 'node:child_process';
 
-const CLI_PATH = join(process.cwd(), 'dist/cli.js');
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
+import { CLI_BIN, USES_COMPILED_ENTRY } from './test-utils/cli-entry.ts';
+
 const EXAMPLE_DIR = join(process.cwd(), 'example');
 
 function runCli(dir: string) {
-  const result = spawnSync('node', [CLI_PATH, dir], {
+  const result = spawnSync('node', [CLI_BIN, dir], {
     encoding: 'utf-8',
   });
   if (result.status !== 0) {
@@ -17,6 +20,8 @@ function runCli(dir: string) {
 }
 
 beforeAll(() => {
+  if (!USES_COMPILED_ENTRY || existsSync(join(process.cwd(), 'dist/cli.js'))) return;
+
   const build = spawnSync('pnpm', ['build'], { encoding: 'utf-8' });
   if (build.status !== 0) {
     throw new Error(build.stderr || `build failed with exit ${build.status}`);

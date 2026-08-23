@@ -8,12 +8,12 @@ import process from 'node:process';
 import url from 'node:url';
 
 class CommandError extends Error {
-  constructor(
-    message: string,
-    readonly exitCode: number,
-  ) {
+  readonly exitCode: number;
+
+  constructor(message: string, exitCode: number) {
     super(message);
     this.name = 'CommandError';
+    this.exitCode = exitCode;
   }
 }
 
@@ -73,11 +73,13 @@ async function clearDirectoryContents(targetDir: string): Promise<void> {
 }
 
 function installExampleDependencies(): void {
-  run('pnpm', ['--dir', exampleDir, 'install', '--ignore-workspace', '--no-lockfile'], { cwd: repoRoot });
+  run('pnpm', ['--dir', exampleDir, 'install', '--ignore-workspace', '--no-lockfile', '--ignore-scripts'], {
+    cwd: repoRoot,
+  });
 }
 
 function lintExample(): void {
-  run('pnpm', ['exec', 'eslint', '--max-warnings', '0', 'example'], { cwd: repoRoot });
+  run('pnpm', ['run', 'lint:example'], { cwd: repoRoot });
 }
 
 function typeCheckExample(): void {
@@ -97,7 +99,7 @@ async function removeExampleNodeModules(): Promise<void> {
 }
 
 function transformExample(): void {
-  run('pnpm', ['exec', 'tsx', 'src/cli.ts', 'example'], { cwd: repoRoot });
+  run('node', [process.env['CLI_ENTRY'] === 'dist' ? 'bin/run.mjs' : 'bin/dev.mjs', 'example'], { cwd: repoRoot });
 }
 
 async function cleanupExample(exampleSnapshotDir: string): Promise<void> {
@@ -171,4 +173,9 @@ async function main(): Promise<number> {
   return exitCode;
 }
 
-process.exit(await main());
+const invokedPath = process.argv[1];
+const isDirectExecution = invokedPath != null && import.meta.url === url.pathToFileURL(invokedPath).href;
+
+if (isDirectExecution) {
+  process.exit(await main());
+}

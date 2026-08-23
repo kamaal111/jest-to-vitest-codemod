@@ -155,7 +155,12 @@ exports[`jest.restoreAllMocks -> vi.restoreAllMocks > adds vi.clearAllMocks in l
 
 exports[`jest.restoreAllMocks -> vi.restoreAllMocks > replaces jest restoreAllMocks with vi 1`] = `"vi.restoreAllMocks()"`;
 
-exports[`jest.setMock -> vi.mock > replaces jest.setMock with vi.mock spreading value as default 1`] = `"vi.mock('./some-path', () => ({ ...{ mocked: true }, default: { mocked: true } }))"`;
+exports[`jest.setMock -> vi.mock > replaces jest.setMock with a vi.mock factory sharing one module object 1`] = `
+"vi.mock('./some-path', () => {
+  const mockedModule = { mocked: true };
+  return { ...mockedModule, default: mockedModule };
+})"
+`;
 
 exports[`jest.setTimeout -> vi.setConfig > replaces jest setTimeout with vi 1`] = `"vi.setConfig({ testTimeout: 50_000 })"`;
 

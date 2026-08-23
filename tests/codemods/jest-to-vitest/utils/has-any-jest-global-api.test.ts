@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { parseAsync } from '@ast-grep/napi';
+import { describe, expect, it } from 'vitest';
 
 import { JEST_TO_VITEST_LANGUAGE } from '../../../../src/codemods/jest-to-vitest/index.js';
 import hasAnyJestGlobalAPI from '../../../../src/codemods/jest-to-vitest/utils/has-any-jest-global-api.js';

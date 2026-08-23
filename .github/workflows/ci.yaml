@@ -7,6 +7,9 @@ concurrency:
   group: ${{ github.ref }}-ci
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Quality
@@ -15,9 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(jq -r '.devEngines.packageManager.version' package.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: extractions/setup-just@v3
+
+      - uses: pnpm/action-setup@v5
         with:
-          version: 10.13.1
+          version: ${{ steps.pnpm-version.outputs.version }}
 
       - uses: actions/setup-node@v6
         with:
@@ -25,18 +34,31 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - run: pnpm quality
+      - run: just bootstrap-ci
+
+      - run: just quality
 
   test:
-    name: Test
+    name: Test (${{ matrix.cli_entry }})
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cli_entry: [src, dist]
+    env:
+      CLI_ENTRY: ${{ matrix.cli_entry }}
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(jq -r '.devEngines.packageManager.version' package.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: extractions/setup-just@v3
+
+      - uses: pnpm/action-setup@v5
         with:
-          version: 10.13.1
+          version: ${{ steps.pnpm-version.outputs.version }}
 
       - uses: actions/setup-node@v6
         with:
@@ -44,20 +66,35 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - run: pnpm test:cov
+      - run: just bootstrap-ci
+
+      - name: Build
+        if: matrix.cli_entry == 'dist'
+        run: just build-clean
+
+      - run: ${{ matrix.cli_entry == 'dist' && 'just test' || 'just test-cov' }}
 
   example:
-    name: Example App Transformation
+    name: Example App Transformation (${{ matrix.cli_entry }})
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    strategy:
+      matrix:
+        cli_entry: [src, dist]
+    env:
+      CLI_ENTRY: ${{ matrix.cli_entry }}
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - name: Read pnpm version
+        id: pnpm-version
+        run: echo "version=$(jq -r '.devEngines.packageManager.version' package.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: extractions/setup-just@v3
+
+      - uses: pnpm/action-setup@v5
         with:
-          version: 10.13.1
+          version: ${{ steps.pnpm-version.outputs.version }}
 
       - uses: actions/setup-node@v6
         with:
@@ -65,44 +102,22 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: 'pnpm'
 
-      - run: pnpm install
+      - run: just bootstrap-ci
 
-      - name: Install example app dependencies
-        working-directory: example
-        run: npm install
+      - name: Build
+        if: matrix.cli_entry == 'dist'
+        run: just build-clean
 
-      - name: Type-check example app (before transformation)
-        working-directory: example
-        run: npm run type-check
+      - run: just example-transform-check
 
-      - name: Lint example app (before transformation)
-        run: pnpm exec eslint --max-warnings 0 example
-
-      - name: Run example tests with Jest (before transformation)
-        working-directory: example
-        run: npx jest
-
-      - name: Clean example app dependencies (before codemod)
-        working-directory: example
-        run: rm -rf node_modules
-
-      - name: Build codemod
-        run: pnpm build
-
-      - name: Run codemod on example app
-        run: node dist/cli.js example
-
-      - name: Install example app dependencies (after transformation)
-        working-directory: example
-        run: npm install
-
-      - name: Type-check example app (after transformation)
-        working-directory: example
-        run: npm run type-check
-
-      - name: Lint example app (after transformation)
-        run: pnpm exec eslint --max-warnings 0 example
-
-      - name: Run transformed tests
-        working-directory: example
-        run: npx vitest run
+      - name: Verify the example was actually transformed
+        run: |
+          just transform-example
+          if ! grep -rqE "from ['\"]vitest['\"]" example/tests; then
+            echo "::error::example/tests does not import vitest after transformation"
+            exit 1
+          fi
+          if grep -rqE "(^|[^'\"\`[:alnum:]_$])jest\.|from ['\"]@jest/globals['\"]" example/tests; then
+            echo "::error::example/tests still references jest after transformation"
+            exit 1
+          fi

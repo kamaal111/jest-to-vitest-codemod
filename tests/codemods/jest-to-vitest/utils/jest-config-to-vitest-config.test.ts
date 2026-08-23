@@ -201,15 +201,15 @@ export default config;`;
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
     expect(mapping.globals).toBeDefined();
-    expect(mapping.globals!.length).toBeGreaterThan(0);
+    expect(mapping.globals?.length).toBeGreaterThan(0);
   });
 
   it('extracts moduleNameMapper aliases', async () => {
     const mapping = await extractVitestConfigFromJestConfig(FULL_JEST_CONFIG);
 
     expect(mapping.moduleNameMapperAliases).toBeDefined();
-    expect(mapping.moduleNameMapperAliases!.length).toBeGreaterThan(0);
-    const aliasKeys = mapping.moduleNameMapperAliases!.map(([key]) => key);
+    expect(mapping.moduleNameMapperAliases?.length).toBeGreaterThan(0);
+    const aliasKeys = (mapping.moduleNameMapperAliases ?? []).map(([key]) => key);
     expect(aliasKeys).toContain('@/(.*)');
   });
 
@@ -223,7 +223,7 @@ export default config;`;
     const mapping = await extractVitestConfigFromJestConfig(config);
 
     expect(mapping.moduleNameMapperAliases).toBeDefined();
-    const aliases = mapping.moduleNameMapperAliases!;
+    const aliases = mapping.moduleNameMapperAliases ?? [];
     expect(aliases.find(([k]) => k === 'dnd-core')?.[1]).toBe('dnd-core/dist/cjs');
     expect(aliases.find(([k]) => k === 'box-locale-data')?.[1]).toBe('./node_modules/@box/cldr-data/locale-data/en-US');
   });

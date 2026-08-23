@@ -5,7 +5,9 @@
     "declaration": false,
     "emitDeclarationOnly": false,
     "noEmit": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "module": "preserve",
+    "moduleResolution": "bundler"
   },
   "include": ["scripts/**/*.ts"]
 }

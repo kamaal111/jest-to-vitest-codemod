@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import replaceJestApiWithVi, {
   convertMockImplArrowToFunction,
@@ -10,6 +9,7 @@ import replaceJestApiWithVi, {
   replaceJestRequireActual,
   replaceJestRequireMock,
 } from '../../../../src/codemods/jest-to-vitest/rules/replace-jest-api-with-vi';
+import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('jest.requireActual -> vi.importActual', () => {
   it('replaces jest.requireActual with vi.importActual', async () => {
@@ -532,7 +532,7 @@ jest.mock('components/core/modal/actions', () => {
 });
 
 describe('jest.setMock -> vi.mock', () => {
-  it('replaces jest.setMock with vi.mock spreading value as default', async () => {
+  it('replaces jest.setMock with a vi.mock factory sharing one module object', async () => {
     const source = `jest.setMock('./some-path', { mocked: true })`;
 
     const modifications = await invalidRuleSignal(source, JEST_TO_VITEST_LANGUAGE, ast => {
@@ -540,9 +540,10 @@ describe('jest.setMock -> vi.mock', () => {
     });
     const updatedSource = modifications.ast.root().text();
 
-    expect(updatedSource).toContain(
-      `vi.mock('./some-path', () => ({ ...{ mocked: true }, default: { mocked: true } }))`,
-    );
+    expect(updatedSource).toContain(`vi.mock('./some-path', () => {
+  const mockedModule = { mocked: true };
+  return { ...mockedModule, default: mockedModule };
+})`);
   });
 });
 

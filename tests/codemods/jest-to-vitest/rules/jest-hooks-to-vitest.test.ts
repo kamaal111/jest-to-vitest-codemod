@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import jestHooksToVitest from '../../../../src/codemods/jest-to-vitest/rules/jest-hooks-to-vitest';
+import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('beforeEach', () => {
   it('removes return', async () => {

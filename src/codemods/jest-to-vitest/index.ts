@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { Lang, parseAsync, type SgNode, type SgRoot } from '@ast-grep/napi';
@@ -12,8 +12,12 @@ import {
 } from '@kamaalio/codemod-kit';
 import { type types, objects } from '@kamaalio/kamaal';
 
-import packageJSON from '../../../package.json';
-import hasAnyJestGlobalAPI from './utils/has-any-jest-global-api.js';
+import addVitestImports from './rules/add-vitest-imports.ts';
+import { doneCallbackToPromise } from './rules/done-callback-to-promise.ts';
+import jestFocusedSkippedToVitest from './rules/jest-focused-skipped-to-vitest.ts';
+import jestHooksToVitest from './rules/jest-hooks-to-vitest.ts';
+import jestMockTypeToVitest from './rules/jest-mock-type-to-vitest.ts';
+import removeJestImport from './rules/remove-jest-import.ts';
 import replaceJestApiWithVi, {
   convertMockImplArrowToFunction,
   fixViCompatIssues,
@@ -21,20 +25,16 @@ import replaceJestApiWithVi, {
   replaceJestDontMock,
   replaceJestRequireActual,
   replaceJestRequireMock,
-} from './rules/replace-jest-api-with-vi.js';
-import { requireToDynamicImport } from './rules/require-to-dynamic-import.js';
-import { doneCallbackToPromise } from './rules/done-callback-to-promise.js';
-import jestFocusedSkippedToVitest from './rules/jest-focused-skipped-to-vitest.js';
-import jestHooksToVitest from './rules/jest-hooks-to-vitest.js';
-import jestMockTypeToVitest from './rules/jest-mock-type-to-vitest.js';
-import addVitestImports from './rules/add-vitest-imports.js';
-import removeJestImport from './rules/remove-jest-import.js';
+} from './rules/replace-jest-api-with-vi.ts';
+import { requireToDynamicImport } from './rules/require-to-dynamic-import.ts';
+import hasAnyJestGlobalAPI from './utils/has-any-jest-global-api.ts';
 import {
   buildVitestConfigContent,
   extractTsconfigPathAliases,
   extractVitestConfigFromJestConfig,
   type VitestConfigMapping,
-} from './utils/jest-config-to-vitest-config.js';
+} from './utils/jest-config-to-vitest-config.ts';
+import packageJSON from '../../../package.json' with { type: 'json' };
 
 interface AutoMockEntry {
   moduleName: string;
@@ -103,7 +103,7 @@ async function jestToVitest(content: SgRoot<TypesMap> | string, filename?: types
 }
 
 const ALWAYS_VITEST_DEV_DEPENDENCIES: Record<string, string> = {
-  vitest: packageJSON.devDependencies.vitest,
+  vitest: packageJSON.devDependencies['vitest'],
   '@vitest/coverage-v8': packageJSON.devDependencies['@vitest/coverage-v8'],
 };
 
@@ -127,7 +127,16 @@ const CONDITIONAL_DEV_DEPENDENCIES: Record<
   },
 };
 
-async function generateCustomEnvSetup(root: string, configMapping: VitestConfigMapping): Promise<string | null> {
+async function writeFileUnlessDryRun(dryRun: boolean, filePath: string, content: string): Promise<void> {
+  if (dryRun) return;
+  await fs.writeFile(filePath, content);
+}
+
+async function generateCustomEnvSetup(
+  root: string,
+  configMapping: VitestConfigMapping,
+  dryRun: boolean,
+): Promise<string | null> {
   const testEnvProp = configMapping.testProperties.find(([key]) => key === 'environment');
   if (testEnvProp == null) return null;
 
@@ -193,11 +202,11 @@ async function generateCustomEnvSetup(root: string, configMapping: VitestConfigM
   if (setupLines.length === 0) return null;
 
   const setupFileName = 'vitest-custom-env-setup.ts';
-  await fs.writeFile(path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
+  await writeFileUnlessDryRun(dryRun, path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
   return setupFileName;
 }
 
-async function generateTestingLibraryCompatSetup(root: string): Promise<string> {
+async function generateTestingLibraryCompatSetup(root: string, dryRun: boolean): Promise<string> {
   const setupFileName = 'vitest-testing-library-compat.ts';
   const setupLines = [
     "import { screen } from '@testing-library/react';",
@@ -211,7 +220,7 @@ async function generateTestingLibraryCompatSetup(root: string): Promise<string> 
     '  }',
     '}) as typeof screen.findByText;',
   ];
-  await fs.writeFile(path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
+  await writeFileUnlessDryRun(dryRun, path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
   return setupFileName;
 }
 
@@ -238,6 +247,7 @@ async function generateSnapshotSerializerSetup(
   root: string,
   setupFileName: string,
   snapshotSerializers: ReadonlyArray<string> | null | undefined,
+  dryRun: boolean,
 ): Promise<string | null> {
   const serializerLiterals = (snapshotSerializers ?? []).filter(isQuotedStringLiteral);
   if (serializerLiterals.length === 0) return null;
@@ -259,7 +269,7 @@ async function generateSnapshotSerializerSetup(
     }
   }
 
-  await fs.writeFile(path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
+  await writeFileUnlessDryRun(dryRun, path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
   return setupFileName;
 }
 
@@ -267,12 +277,13 @@ async function generateVitestSetupFile(
   root: string,
   setupFileName: string,
   setupEntries: ReadonlyArray<string>,
+  dryRun: boolean,
 ): Promise<string | null> {
   const uniqueSetupEntries = [...new Set(setupEntries.map(toImportStringLiteral))];
   if (uniqueSetupEntries.length === 0) return null;
 
   const setupLines = uniqueSetupEntries.map(entry => `import ${entry};`);
-  await fs.writeFile(path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
+  await writeFileUnlessDryRun(dryRun, path.join(root, setupFileName), `${setupLines.join('\n')}\n`);
   return setupFileName;
 }
 
@@ -327,6 +338,7 @@ async function generateVitestConfigFile(
     webpackRemotes: string[];
     additionalSetupFiles: string[];
   },
+  dryRun: boolean,
 ): Promise<void> {
   const defaultMapping: VitestConfigMapping = {
     testProperties: [],
@@ -354,6 +366,7 @@ async function generateVitestConfigFile(
     root,
     vitestConfigNameToSnapshotSerializerSetupName(vitestConfigName),
     configMapping.snapshotSerializers,
+    dryRun,
   );
   const setupEntries = [...(configMapping.setupFiles ?? []), ...sharedOptions.additionalSetupFiles];
   if (sharedOptions.hasJestDom) {
@@ -366,6 +379,7 @@ async function generateVitestConfigFile(
     root,
     vitestConfigNameToSetupFileName(vitestConfigName),
     setupEntries,
+    dryRun,
   );
   const additionalSetupFiles = generatedSetupFile != null ? [`./${generatedSetupFile}`] : [];
   if (snapshotSerializerSetupFile != null && generatedSetupFile == null) {
@@ -380,23 +394,23 @@ async function generateVitestConfigFile(
     hasJestDom: false,
     additionalSetupFiles,
   });
-  await fs.writeFile(path.join(root, vitestConfigName), vitestConfigContent);
+  await writeFileUnlessDryRun(dryRun, path.join(root, vitestConfigName), vitestConfigContent);
 }
 
-async function transformAuxiliaryTestFiles(root: string): Promise<void> {
+async function transformAuxiliaryTestFiles(root: string, dryRun: boolean): Promise<void> {
   const auxiliaryDirs = ['test-utils', 'tests', 'scripts/tests'];
   const auxiliaryFiles = ['jest-mock-config.js', 'jest-cucumber-config.js'];
 
   for (const dirName of auxiliaryDirs) {
-    await transformDirFiles(path.join(root, dirName));
+    await transformDirFiles(path.join(root, dirName), dryRun);
   }
 
   for (const fileName of auxiliaryFiles) {
-    await transformSingleFile(path.join(root, fileName));
+    await transformSingleFile(path.join(root, fileName), dryRun);
   }
 }
 
-async function transformDirFiles(dirPath: string): Promise<void> {
+async function transformDirFiles(dirPath: string, dryRun: boolean): Promise<void> {
   let entries: Dirent[];
   try {
     entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -409,14 +423,14 @@ async function transformDirFiles(dirPath: string): Promise<void> {
 
     const fullPath = path.join(dirPath, entry.name);
     if (entry.isDirectory()) {
-      await transformDirFiles(fullPath);
+      await transformDirFiles(fullPath, dryRun);
     } else if (entry.isFile() && SOURCE_FILE_REGEX.test(entry.name)) {
-      await transformSingleFile(fullPath);
+      await transformSingleFile(fullPath, dryRun);
     }
   }
 }
 
-async function transformSingleFile(filePath: string): Promise<void> {
+async function transformSingleFile(filePath: string, dryRun: boolean): Promise<void> {
   let content: string;
   try {
     content = await fs.readFile(filePath, { encoding: 'utf-8' });
@@ -428,7 +442,7 @@ async function transformSingleFile(filePath: string): Promise<void> {
   if (jestToVitestFilter(ast.root())) {
     const transformed = await jestToVitest(content, filePath);
     if (transformed !== content) {
-      await fs.writeFile(filePath, transformed);
+      await writeFileUnlessDryRun(dryRun, filePath, transformed);
     }
     return;
   }
@@ -436,7 +450,7 @@ async function transformSingleFile(filePath: string): Promise<void> {
   const compatibilityOnly = await fixViCompatIssues(makeJestToVitestInitialModification(ast, filePath));
   const updatedSource = compatibilityOnly.ast.root().text();
   if (updatedSource !== content) {
-    await fs.writeFile(filePath, updatedSource);
+    await writeFileUnlessDryRun(dryRun, filePath, updatedSource);
   }
 }
 
@@ -486,6 +500,7 @@ async function rewriteAutoMockFactoriesInFile(
   filePath: string,
   autoMocks: ReadonlyMap<string, string>,
   projectRoot: string,
+  dryRun: boolean,
 ): Promise<void> {
   let content: string;
   try {
@@ -519,11 +534,15 @@ async function rewriteAutoMockFactoriesInFile(
 
   const updatedSource = modifications.ast.root().text();
   if (updatedSource !== content) {
-    await fs.writeFile(filePath, updatedSource);
+    await writeFileUnlessDryRun(dryRun, filePath, updatedSource);
   }
 }
 
-async function rewriteAutoMockFactoriesInTransformedFiles(root: string, autoMocks: AutoMockEntry[]): Promise<void> {
+async function rewriteAutoMockFactoriesInTransformedFiles(
+  root: string,
+  autoMocks: AutoMockEntry[],
+  dryRun: boolean,
+): Promise<void> {
   const autoMockMap = new Map(autoMocks.map(entry => [entry.moduleName, entry.mockPath]));
 
   async function walkDir(dir: string): Promise<void> {
@@ -541,7 +560,7 @@ async function rewriteAutoMockFactoriesInTransformedFiles(root: string, autoMock
       if (entry.isDirectory()) {
         await walkDir(fullPath);
       } else if (entry.isFile() && TEST_FILE_REGEX.test(entry.name)) {
-        await rewriteAutoMockFactoriesInFile(fullPath, autoMockMap, root);
+        await rewriteAutoMockFactoriesInFile(fullPath, autoMockMap, root, dryRun);
       }
     }
   }
@@ -556,8 +575,8 @@ async function jestToVitestPostTransform(
     root: string;
     results: Array<RunCodemodOkResult>;
   },
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _codemod: Codemod,
+  dryRun: boolean,
 ): Promise<void> {
   let content: Array<Dirent<string>>;
   try {
@@ -582,8 +601,7 @@ async function jestToVitestPostTransform(
   }
 
   const packageJson = packageJsonContent != null ? JSON.parse(packageJsonContent) : null;
-  const allDeps =
-    packageJson != null ? { ...(packageJson.dependencies ?? {}), ...(packageJson.devDependencies ?? {}) } : {};
+  const allDeps = packageJson != null ? { ...packageJson.dependencies, ...packageJson.devDependencies } : {};
   const babelRewirePlugin =
     allDeps['babel-plugin-rewire-ts'] != null ? 'rewire-ts' : allDeps['babel-plugin-rewire'] != null ? 'rewire' : null;
   const hasJestDom = allDeps['@testing-library/jest-dom'] != null;
@@ -619,11 +637,13 @@ async function jestToVitestPostTransform(
     }
   }
 
-  const customEnvSetupFile = await generateCustomEnvSetup(root, primaryConfigMapping);
+  const customEnvSetupFile = await generateCustomEnvSetup(root, primaryConfigMapping, dryRun);
   if (customEnvSetupFile != null) {
     additionalSetupFiles.push(`./${customEnvSetupFile}`);
   }
-  const testingLibraryCompatSetupFile = hasTestingLibraryReact ? await generateTestingLibraryCompatSetup(root) : null;
+  const testingLibraryCompatSetupFile = hasTestingLibraryReact
+    ? await generateTestingLibraryCompatSetup(root, dryRun)
+    : null;
   if (testingLibraryCompatSetupFile != null) {
     additionalSetupFiles.push(`./${testingLibraryCompatSetupFile}`);
   }
@@ -632,6 +652,7 @@ async function jestToVitestPostTransform(
     root,
     vitestConfigNameToSnapshotSerializerSetupName('vitest.config.ts'),
     primaryConfigMapping.snapshotSerializers,
+    dryRun,
   );
   const primarySetupEntries = [...(primaryConfigMapping.setupFiles ?? []), ...additionalSetupFiles];
   if (hasJestDom) {
@@ -644,6 +665,7 @@ async function jestToVitestPostTransform(
     root,
     vitestConfigNameToSetupFileName('vitest.config.ts'),
     primarySetupEntries,
+    dryRun,
   );
   const primaryAdditionalSetupFiles = generatedPrimarySetupFile != null ? [`./${generatedPrimarySetupFile}`] : [];
   if (snapshotSerializerSetupFile != null && generatedPrimarySetupFile == null) {
@@ -664,7 +686,7 @@ async function jestToVitestPostTransform(
   const existingVitestConfig = content.find(item => item.isFile() && item.name.startsWith('vitest.config.'));
   if (existingVitestConfig == null) {
     const vitestConfigContent = buildVitestConfigContent(primaryConfigWithSharedOptions);
-    await fs.writeFile(path.join(root, 'vitest.config.ts'), vitestConfigContent);
+    await writeFileUnlessDryRun(dryRun, path.join(root, 'vitest.config.ts'), vitestConfigContent);
   }
 
   const additionalJestConfigs = findAdditionalJestConfigs(content);
@@ -680,20 +702,27 @@ async function jestToVitestPostTransform(
       // Unreadable — generate empty config
     }
 
-    await generateVitestConfigFile(root, vitestConfigName, jestConfigContent, pathAliases, {
-      babelRewirePlugin,
-      hasJestDom,
-      hasReact,
-      webpackRemotes,
-      additionalSetupFiles: testingLibraryCompatSetupFile != null ? [`./${testingLibraryCompatSetupFile}`] : [],
-    });
+    await generateVitestConfigFile(
+      root,
+      vitestConfigName,
+      jestConfigContent,
+      pathAliases,
+      {
+        babelRewirePlugin,
+        hasJestDom,
+        hasReact,
+        webpackRemotes,
+        additionalSetupFiles: testingLibraryCompatSetupFile != null ? [`./${testingLibraryCompatSetupFile}`] : [],
+      },
+      dryRun,
+    );
   }
 
-  await transformAuxiliaryTestFiles(root);
+  await transformAuxiliaryTestFiles(root, dryRun);
 
   const autoMocks = await collectAutoMocks(root, primaryConfigMapping.moduleDirectories ?? []);
   if (autoMocks.length > 0) {
-    await rewriteAutoMockFactoriesInTransformedFiles(root, autoMocks);
+    await rewriteAutoMockFactoriesInTransformedFiles(root, autoMocks, dryRun);
   }
 
   if (packageJson != null && packageJsonContent != null) {
@@ -704,10 +733,11 @@ async function jestToVitestPostTransform(
       }
     }
 
+    const existingDevDependencies: Record<string, string> = packageJson['devDependencies'];
     const devDependencies = objects.omitBy(
       Object.fromEntries(
         Object.entries({
-          ...((packageJson['devDependencies'] as Record<string, string> | undefined) ?? {}),
+          ...existingDevDependencies,
           ...ALWAYS_VITEST_DEV_DEPENDENCIES,
           ...conditionalDeps,
         }).sort(([a], [b]) => a.localeCompare(b)),
@@ -718,7 +748,11 @@ async function jestToVitestPostTransform(
     const indentMatch = packageJsonContent.match(/^(\s+)"/m);
     const indent = indentMatch != null ? indentMatch[1].length : 2;
     const updatedPackageJson = { ...packageJson, devDependencies };
-    await fs.writeFile(path.join(root, 'package.json'), JSON.stringify(updatedPackageJson, null, indent) + '\n');
+    await writeFileUnlessDryRun(
+      dryRun,
+      path.join(root, 'package.json'),
+      JSON.stringify(updatedPackageJson, null, indent) + '\n',
+    );
   }
 }
 
@@ -726,7 +760,16 @@ export const JEST_TO_VITEST_CODEMOD: Codemod = {
   name: 'jest-to-vitest-transformer',
   languages: [JEST_TO_VITEST_LANGUAGE, JEST_TO_VITEST_TSX_LANGUAGE],
   transformer: jestToVitest,
-  postTransform: jestToVitestPostTransform,
+  postTransform: (results, codemod) => jestToVitestPostTransform(results, codemod, false),
 };
+
+export function makeJestToVitestCodemod({ dryRun = false }: { dryRun?: boolean } = {}): Codemod {
+  return {
+    name: JEST_TO_VITEST_CODEMOD.name,
+    languages: JEST_TO_VITEST_CODEMOD.languages,
+    transformer: JEST_TO_VITEST_CODEMOD.transformer,
+    postTransform: (results, codemod) => jestToVitestPostTransform(results, codemod, dryRun),
+  };
+}
 
 export default jestToVitest;

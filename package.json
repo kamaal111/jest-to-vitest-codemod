@@ -1,79 +1,74 @@
 {
   "name": "@kamaalio/jest-to-vitest-codemod",
   "version": "0.0.2",
-  "type": "module",
+  "bugs": "https://github.com/kamaal111/jest-to-vitest-codemod/issues",
+  "license": "MIT",
   "author": "Kamaal Farah",
   "repository": "kamaal111/jest-to-vitest-codemod",
-  "bugs": "https://github.com/kamaal111/jest-to-vitest-codemod/issues",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "main": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
   "bin": {
-    "jest-to-vitest-codemod": "./dist/cli.js"
+    "jest-to-vitest-codemod": "./bin/run.mjs"
   },
-  "license": "MIT",
-  "packageManager": "pnpm@10.13.1",
-  "engines": {
-    "node": ">=22.0.0"
-  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "rslib build",
-    "build:clean": "rm -rf dist tsconfig.tsbuildinfo && pnpm build",
-    "dev": "rslib build --watch",
-    "example:transform-check": "tsx ./scripts/example-transform-check.ts",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "lint": "eslint --max-warnings 0",
-    "prepare": "husky",
-    "ready": "pnpm quality && pnpm test:cov && pnpm example:transform-check",
     "test": "vitest run",
-    "test:cov": "pnpm install && vitest run --coverage",
-    "test:u": "vitest run --update",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
-    "quality": "pnpm install && pnpm lint && pnpm format:check && pnpm type-check"
+    "test:cov": "vitest run --coverage",
+    "test:u": "vitest run --update",
+    "build": "pnpm run compile",
+    "clean:build": "rm -rf dist tsconfig.tsbuildinfo && pnpm run build",
+    "compile": "tsc",
+    "type-check": "tsc --noEmit",
+    "type-check:test": "tsc --noEmit --project tsconfig.test.json",
+    "type-check:scripts": "tsc --noEmit --project tsconfig.scripts.json",
+    "lint": "oxlint src tests scripts vitest.config.ts",
+    "lint:example": "oxlint --config example/.oxlintrc.json example/",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "example:transform-check": "node ./scripts/example-transform-check.ts",
+    "quality": "pnpm run lint && pnpm run format:check && pnpm run type-check && pnpm run type-check:test && pnpm run type-check:scripts",
+    "ready": "pnpm run quality && pnpm run test:cov && pnpm run example:transform-check",
+    "prepare": "husky"
   },
   "dependencies": {
-    "@ast-grep/napi": "^0.41.0",
-    "@kamaalio/codemod-kit": "^0.0.42",
-    "@kamaalio/kamaal": "^0.8.0",
+    "@ast-grep/napi": "^0.45.1",
+    "@kamaalio/codemod-kit": "^0.0.45",
+    "@kamaalio/kamaal": "^0.9.11",
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@jest/globals": "^30.2.0",
-    "@kamaalio/prettier-config": "^0.1.2",
-    "@rslib/core": "^0.19.6",
-    "@types/node": "^25.3.2",
-    "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^10.0.2",
-    "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.3.0",
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint-plugin-import": "^2.32.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.56.1",
-    "vitest": "^4.0.18"
+    "lint-staged": "^17.3.0",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "lint-staged": {
-    "**/*.{js,ts,tsx}": [
-      "eslint --fix"
-    ],
-    "**/*": "prettier --write --ignore-unknown"
+    "*.{js,mjs,cjs,ts}": "pnpm run lint",
+    "*": "oxfmt --no-error-on-unmatched-pattern"
   },
-  "prettier": "@kamaalio/prettier-config"
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.22.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
 }

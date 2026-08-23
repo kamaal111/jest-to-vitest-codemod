@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import { requireToDynamicImport } from '../../../../src/codemods/jest-to-vitest/rules/require-to-dynamic-import';
+import { invalidRuleSignal, validRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('requireToDynamicImport', () => {
   it('transforms require with single quotes at top-level to dynamic import', async () => {

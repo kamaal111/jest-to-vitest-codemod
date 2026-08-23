@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { invalidRuleSignal } from '../../../test-utils/detection-theory';
 import { JEST_TO_VITEST_LANGUAGE, makeJestToVitestInitialModification } from '../../../../src/codemods/jest-to-vitest';
 import jestFocusedSkippedToVitest from '../../../../src/codemods/jest-to-vitest/rules/jest-focused-skipped-to-vitest';
+import { invalidRuleSignal } from '../../../test-utils/detection-theory';
 
 describe('fit -> it.only', () => {
   it('replaces fit with it.only', async () => {
