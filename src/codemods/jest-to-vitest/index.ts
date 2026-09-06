@@ -321,10 +321,8 @@ async function generateVitestConfigFile(
   jestConfigContent: string | null,
   pathAliases: ReadonlyArray<readonly [string, string]>,
   sharedOptions: {
-    babelRewirePlugin: string | null;
     hasJestDom: boolean;
     hasReact: boolean;
-    webpackRemotes: string[];
     additionalSetupFiles: string[];
   },
 ): Promise<void> {
@@ -584,29 +582,9 @@ async function jestToVitestPostTransform(
   const packageJson = packageJsonContent != null ? JSON.parse(packageJsonContent) : null;
   const allDeps =
     packageJson != null ? { ...(packageJson.dependencies ?? {}), ...(packageJson.devDependencies ?? {}) } : {};
-  const babelRewirePlugin =
-    allDeps['babel-plugin-rewire-ts'] != null ? 'rewire-ts' : allDeps['babel-plugin-rewire'] != null ? 'rewire' : null;
   const hasJestDom = allDeps['@testing-library/jest-dom'] != null;
   const hasTestingLibraryReact = allDeps['@testing-library/react'] != null;
   const hasReact = allDeps['react'] != null;
-
-  const webpackRemotes: string[] = [];
-  try {
-    const webpackFiles = await fs.readdir(path.join(root, 'conf', 'webpack'), { withFileTypes: true });
-    for (const file of webpackFiles) {
-      if (!file.isFile()) continue;
-
-      const webpackContent = await fs.readFile(path.join(root, 'conf', 'webpack', file.name), { encoding: 'utf-8' });
-      const remoteMatches = webpackContent.matchAll(/'(@[^'/]+\/[^']+?-remote)'/g);
-      for (const match of remoteMatches) {
-        if (!webpackRemotes.includes(match[1])) {
-          webpackRemotes.push(match[1]);
-        }
-      }
-    }
-  } catch {
-    // No webpack config or unreadable
-  }
 
   const primaryConfigMapping = await loadPrimaryVitestConfigMapping(root, content, pathAliases);
   const additionalSetupFiles: string[] = [];
@@ -654,10 +632,8 @@ async function jestToVitestPostTransform(
     ...primaryConfigMapping,
     setupFiles: null,
     snapshotSerializers: null,
-    babelRewirePlugin,
     hasJestDom: false,
     hasReact,
-    webpackRemotes,
     additionalSetupFiles: primaryAdditionalSetupFiles,
   };
 
@@ -681,10 +657,8 @@ async function jestToVitestPostTransform(
     }
 
     await generateVitestConfigFile(root, vitestConfigName, jestConfigContent, pathAliases, {
-      babelRewirePlugin,
       hasJestDom,
       hasReact,
-      webpackRemotes,
       additionalSetupFiles: testingLibraryCompatSetupFile != null ? [`./${testingLibraryCompatSetupFile}`] : [],
     });
   }

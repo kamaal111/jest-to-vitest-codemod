@@ -267,11 +267,9 @@ export interface VitestConfigMapping {
   globals?: ReadonlyArray<readonly [string, string]>;
   snapshotSerializers?: ReadonlyArray<string> | null;
   hasTransformIgnorePatterns?: boolean;
-  babelRewirePlugin?: string | null;
   hasJestDom?: boolean;
   customExportConditions?: string | null;
   hasReact?: boolean;
-  webpackRemotes?: ReadonlyArray<string>;
   moduleDirectories?: ReadonlyArray<string>;
   autoMocks?: ReadonlyArray<{ moduleName: string; mockPath: string }>;
   autoMockSetupFile?: string | undefined;
@@ -393,7 +391,6 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
   const globals = mapping.globals ?? [];
   const hasCssMock = mapping.hasCssMock ?? false;
   const hasTransformIgnore = mapping.hasTransformIgnorePatterns ?? false;
-  const babelRewirePlugin = mapping.babelRewirePlugin ?? null;
   const hasJestDom = mapping.hasJestDom ?? false;
 
   const hasCoverageProps = coverageProperties.length > 0 || coverageThresholds != null;
@@ -410,7 +407,7 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
 
   const hasReact = mapping.hasReact ?? false;
 
-  const needsPluginType = (hasCssMock && hasTransformIgnore) || babelRewirePlugin != null || hasReact;
+  const needsPluginType = (hasCssMock && hasTransformIgnore) || hasReact;
 
   const importLines = ["import { defineConfig } from 'vitest/config';"];
   if (hasPathAliases) {
@@ -462,59 +459,6 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
       '}',
     );
   }
-  if (babelRewirePlugin != null) {
-    preConfigLines.push(
-      '',
-      'const SOURCE_EXTENSIONS = /\\.[jt]sx?$/;',
-      'const TEST_FILE_PATTERN = /(\\.test\\.|__tests__)/;',
-      '',
-      `function babelRewirePlugin(): Plugin {`,
-      '  return {',
-      "    name: 'babel-rewire',",
-      "    enforce: 'post',",
-      '    async transform(code: string, id: string) {',
-      "      if (!SOURCE_EXTENSIONS.test(id) || id.includes('node_modules') || TEST_FILE_PATTERN.test(id) || !id.includes('/src/')) return;",
-      "      const babel = await import('@babel/core');",
-      '      const result = await babel.transformAsync(code, {',
-      '        filename: id,',
-      '        configFile: false,',
-      '        babelrc: false,',
-      `        plugins: [${JSON.stringify(babelRewirePlugin)}],`,
-      '        sourceMaps: true,',
-      '      });',
-      '      if (!result?.code) return;',
-      '      return { code: result.code, map: result.map };',
-      '    },',
-      '  };',
-      '}',
-    );
-  }
-  const webpackRemotes = mapping.webpackRemotes ?? [];
-  if (webpackRemotes.length > 0) {
-    const remotePrefixes = webpackRemotes.map(r => JSON.stringify(r));
-    preConfigLines.push(
-      '',
-      `const REMOTE_PREFIXES = [${remotePrefixes.join(', ')}];`,
-      "const REMOTE_STUB_PREFIX = '\\remote-stub:';",
-      '',
-      'function webpackRemotesPlugin(): Plugin {',
-      '  return {',
-      "    name: 'webpack-remotes-stub',",
-      "    enforce: 'pre',",
-      '    resolveId(source: string) {',
-      '      if (REMOTE_PREFIXES.some(p => source.startsWith(p))) {',
-      '        return REMOTE_STUB_PREFIX + source;',
-      '      }',
-      '    },',
-      '    load(id: string) {',
-      '      if (id.startsWith(REMOTE_STUB_PREFIX)) {',
-      "        return 'export default {};';",
-      '      }',
-      '    },',
-      '  };',
-      '}',
-    );
-  }
   if (needsCssMockPlugin) {
     preConfigLines.push(
       '',
@@ -544,14 +488,8 @@ export function buildVitestConfigContent(mapping: VitestConfigMapping): string {
   if (hasReact) {
     pluginsEntries.push('jsxInJsPlugin()');
   }
-  if (babelRewirePlugin != null) {
-    pluginsEntries.push('babelRewirePlugin()');
-  }
   if (hasPathAliases) {
     pluginsEntries.push('tsconfigPaths()');
-  }
-  if (webpackRemotes.length > 0) {
-    pluginsEntries.push('webpackRemotesPlugin()');
   }
   if (needsCssMockPlugin) {
     pluginsEntries.push('cssMockPlugin()');
