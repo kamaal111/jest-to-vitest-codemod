@@ -217,7 +217,7 @@ export default config;`;
     const config = `module.exports = Object.assign(baseConfig, {
   moduleNameMapper: {
     '^dnd-core$': 'dnd-core/dist/cjs',
-    'box-locale-data': '<rootDir>/node_modules/@box/cldr-data/locale-data/en-US',
+    'acme-locale-data': '<rootDir>/node_modules/@acme/cldr-data/locale-data/en-US',
   },
 });`;
     const mapping = await extractVitestConfigFromJestConfig(config);
@@ -225,7 +225,9 @@ export default config;`;
     expect(mapping.moduleNameMapperAliases).toBeDefined();
     const aliases = mapping.moduleNameMapperAliases!;
     expect(aliases.find(([k]) => k === 'dnd-core')?.[1]).toBe('dnd-core/dist/cjs');
-    expect(aliases.find(([k]) => k === 'box-locale-data')?.[1]).toBe('./node_modules/@box/cldr-data/locale-data/en-US');
+    expect(aliases.find(([k]) => k === 'acme-locale-data')?.[1]).toBe(
+      './node_modules/@acme/cldr-data/locale-data/en-US',
+    );
   });
 
   it('extracts snapshot serializers as literal entries', async () => {
@@ -385,14 +387,14 @@ describe('buildVitestConfigContent', () => {
       coverageThresholds: null,
       moduleNameMapperAliases: [
         ['dnd-core', 'dnd-core/dist/cjs'],
-        ['box-locale-data', './node_modules/@box/cldr-data/locale-data/en-US'],
+        ['acme-locale-data', './node_modules/@acme/cldr-data/locale-data/en-US'],
       ],
     });
 
     expect(content).toContain('resolve:');
     expect(content).toContain('alias:');
     expect(content).toContain('"dnd-core": "dnd-core/dist/cjs"');
-    expect(content).toContain('path.resolve(__dirname, "./node_modules/@box/cldr-data/locale-data/en-US")');
+    expect(content).toContain('path.resolve(__dirname, "./node_modules/@acme/cldr-data/locale-data/en-US")');
   });
 
   it('adds css: false when hasCssMock is true', () => {
@@ -448,23 +450,17 @@ describe('buildVitestConfigContent', () => {
       hasCssMock: true,
       hasTransformIgnorePatterns: true,
       hasReact: true,
-      babelRewirePlugin: 'rewire',
-      webpackRemotes: ['@scope/app-remote'],
       customExportConditions: "['worker']",
       additionalSetupFiles: ['./vitest.config.setup.ts'],
     });
 
     expect(content).toContain('function jsxInJsPlugin(): Plugin');
-    expect(content).toContain('function babelRewirePlugin(): Plugin');
-    expect(content).toContain('function webpackRemotesPlugin(): Plugin');
     expect(content).toContain('function cssMockPlugin(): Plugin');
     expect(content).toContain("conditions: ['import', 'module', 'browser', 'default']");
     expect(content).toContain("setupFiles: ['./vitest.config.setup.ts']");
     expect(content).toContain('css: false');
     expect(content).toContain('inline: true');
-    expect(content).toContain(
-      'plugins: [jsxInJsPlugin(), babelRewirePlugin(), webpackRemotesPlugin(), cssMockPlugin()]',
-    );
+    expect(content).toContain('plugins: [jsxInJsPlugin(), cssMockPlugin()]');
   });
 });
 
